@@ -2,7 +2,13 @@
 // machine-readable run.json. For every failed flow: which test cases it covers, the step that failed, what
 // was expected, what actually happened, and where the screenshot, screen hierarchy and device log are.
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
-import { basename, join, relative, sep } from 'node:path';
+import { basename, dirname, join, relative, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import { locateFailure } from './source-map.mjs';
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+const toPosix = (path) => String(path ?? '').replace(/\\/g, '/');
 
 /** Every flow folder Maestro wrote (each has a commands.json). */
 function findFlowDirs(root) {
@@ -74,8 +80,10 @@ function interestingLogLines(logFile, limit = 15) {
   if (!existsSync(logFile)) return [];
   const lines = readFileSync(logFile, 'utf8').split(/\r?\n/);
   return lines
-    .filter((line) => /ReactNativeJS|FATAL EXCEPTION|AndroidRuntime|ANR in|\bE (ReactNative|unknown)/.test(line))
-    .filter((line) => !/ReactNativeJS: Running "main"/.test(line))
+    // Errors and warnings only: JS errors/warnings, native crashes, ANRs (logcat's "E/Tag(pid)" and "pid tid E Tag").
+    .filter((line) =>
+      /FATAL EXCEPTION|ANR in|(^|\s)[EW]\/ReactNativeJS|\s[EW] ReactNativeJS|(^|\s)E\/AndroidRuntime|\sE AndroidRuntime/.test(line),
+    )
     .slice(-limit);
 }
 
@@ -115,7 +123,8 @@ export function parseJunit(file) {
     results.set(attrs.name, {
       status,
       testCases: properties.testCases ?? '',
-      file: attrs.file ?? '',
+      tags: properties.tags ? properties.tags.split(',').map((tag) => tag.trim()).filter(Boolean) : [],
+      file: toPosix(attrs.file ?? ''),
       failure: failure ? unescapeXml(failure[2]).trim() : '',
       timeSec: attrs.time ? Math.round(Number(attrs.time)) : undefined,
     });
@@ -148,7 +157,8 @@ function analyseFlow(flowDir, runDir, junit) {
     folder: rel(flowDir),
     status: junit ? junit.status : topFailures.length || stillRunning.length ? 'FAILED' : 'PASSED',
     testCases: config.properties?.testCases || junit?.testCases || '',
-    tags: config.tags ?? [],
+    file: junit?.file ?? '',
+    tags: config.tags ?? junit?.tags ?? [],
     durationSec: junit?.timeSec ?? durationSec,
     evidence: [],
   };
@@ -215,6 +225,8 @@ function analyseFlow(flowDir, runDir, junit) {
     deviceLog: existsSync(deviceLog) ? rel(deviceLog) : '',
     appLog: interestingLogLines(deviceLog),
     passedBefore: trail,
+    // Where in the YAML it failed (file, line, the runFlow chain and the code around it).
+    source: locateFailure(entries, failedIndex, flow.file, ROOT),
   };
   return flow;
 }
@@ -254,7 +266,8 @@ export function writeRunReport(runDir, meta, attempts) {
         folder: '',
         status: result.status,
         testCases: result.testCases,
-        tags: [],
+        file: result.file,
+        tags: result.tags,
         durationSec: result.timeSec ?? 0,
         evidence: [],
         failure:
@@ -272,6 +285,7 @@ export function writeRunReport(runDir, meta, attempts) {
                 deviceLog: '',
                 appLog: [],
                 passedBefore: [],
+                source: null,
               }
             : undefined,
       });
@@ -285,7 +299,8 @@ export function writeRunReport(runDir, meta, attempts) {
       folder: '',
       status: 'FAILED',
       testCases: planned.testCases,
-      tags: [],
+      file: planned.file ?? '',
+      tags: planned.tags ?? [],
       durationSec: 0,
       evidence: [],
       failure: {
@@ -301,6 +316,7 @@ export function writeRunReport(runDir, meta, attempts) {
         deviceLog: '',
         appLog: [],
         passedBefore: [],
+        source: null,
       },
     });
   }
@@ -356,6 +372,12 @@ export function writeRunReport(runDir, meta, attempts) {
         lines.push('- **Cause:** the device connection or Maestro\'s on-device driver failed, not the app (see docs/troubleshooting.md#device-not-detected)');
       }
       lines.push(`- **When:** ${f.at || '—'}`);
+      if (f.source) {
+        lines.push(`- **Where:** \`${f.source.file}:${f.source.line}\``);
+        if (f.source.chain.length > 1) {
+          lines.push(`- **Called from:** ${f.source.chain.slice(0, -1).map((c) => `\`${c.file}:${c.line}\``).join(' → ')}`);
+        }
+      }
       lines.push(`- **Screenshot:** ${link(f.screenshot)} · **Screen hierarchy:** ${link(f.hierarchy)} · **Device log:** ${link(f.deviceLog)}`);
       if (f.passedBefore.length) lines.push(`- **Last steps that passed:** ${f.passedBefore.join(' → ')}`);
       if (f.appLog.length) lines.push('', '```text', ...f.appLog, '```');
@@ -370,8 +392,9 @@ export function writeRunReport(runDir, meta, attempts) {
     lines.push('');
   }
   lines.push(
-    'Raw artifacts: `maestro/` (per-flow commands.json, screenshots, hierarchy, device logs), `junit.xml`,',
-    '`debug/` (maestro.log), `logs/` (console and crash logs); `*-retry` folders hold the re-run attempt.',
+    'Raw artifacts: `maestro/NN/` (per-flow commands.json, screenshots, hierarchy, device logs), `junit/`,',
+    '`debug/` (maestro.log), `logs/` (console and crash logs); `NN-retry` folders hold a re-run attempt.',
+    'Open the interactive HTML report with `npm run report`.',
     '',
   );
   writeFileSync(join(runDir, 'summary.md'), lines.join('\n'));
@@ -395,4 +418,26 @@ export function scrubSecrets(runDir, secrets) {
     }
   };
   walk(runDir);
+}
+
+/**
+ * Re-analyses a finished run from its artifacts (both layouts: one Maestro session per flow, maestro/NN +
+ * junit/NN.xml, and the older single session, maestro/ + junit.xml) and rewrites run.json and summary.md.
+ */
+export function rebuildRun(runDir) {
+  const meta = JSON.parse(readFileSync(join(runDir, 'run.json'), 'utf8'));
+  delete meta.flows;
+  const attempts = [];
+  const maestroDir = join(runDir, 'maestro');
+  if (existsSync(join(runDir, 'junit.xml')) || !existsSync(join(runDir, 'junit'))) {
+    attempts.push({ maestroDir, junit: join(runDir, 'junit.xml') });
+    if (existsSync(join(runDir, 'maestro-retry'))) {
+      attempts.push({ maestroDir: join(runDir, 'maestro-retry'), junit: join(runDir, 'junit-retry.xml') });
+    }
+  } else if (existsSync(maestroDir)) {
+    for (const slot of readdirSync(maestroDir).sort()) {
+      attempts.push({ maestroDir: join(maestroDir, slot), junit: join(runDir, 'junit', `${slot}.xml`) });
+    }
+  }
+  return writeRunReport(runDir, meta, attempts);
 }

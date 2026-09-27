@@ -16,6 +16,9 @@ export const MAESTRO_PARAMS = [
 /** Stay inside this process: never passed to Maestro, printed, or left in a report. */
 export const SECRETS = ['SUPABASE_SERVICE_ROLE_KEY'];
 
+/** Not secret, but private (real people's addresses): shown as "set" and blanked out of run files. */
+export const PRIVATE = ['TEST_USER_EMAIL', 'GOOGLE_TEST_ACCOUNT'];
+
 /** Runner-only settings. */
 const RUNNER = ['DEVICE_ID', 'SUPABASE_URL', 'MAESTRO_BIN', 'ADB_BIN'];
 
@@ -65,6 +68,7 @@ export function describeConfig(config) {
   const shown = {};
   for (const key of KNOWN_KEYS) {
     if (SECRETS.includes(key)) shown[key] = config[key] ? 'set (hidden)' : 'not set';
+    else if (PRIVATE.includes(key)) shown[key] = config[key] ? 'set (private)' : 'not set';
     else if (config[key] !== undefined) shown[key] = config[key];
   }
   return shown;

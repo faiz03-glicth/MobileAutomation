@@ -21,7 +21,9 @@ configuration (and say so), and write a report for every run.
 | Re-run a flow on every save | `npm run test:flow -- <file> --watch` |
 | What's on the phone's screen now | `npm run inspect` (`-- --all` includes system UI) |
 | Build selectors interactively | `npm run studio` |
-| Latest run's summary | `npm run report` |
+| **HTML report** of the latest run (opens in the browser) | `npm run report` |
+| Same, as text in the terminal | `npm run report -- --text` |
+| Report of an older run | `npm run report -- reports/runs/<run folder>` |
 | Static checks (no device) | `npm run check` (`-- --maestro` adds Maestro's syntax check of every file) |
 
 Options (after `--`): `--device <serial>`, `--debug`, `--interactive`, `--exclude-tags a,b`, `--html`
@@ -85,6 +87,22 @@ maestro test -e APP_ID=com.faiz.streak maestro/flows/smoke/SMK-01_guest_journey.
 Direct runs get no preflight, no report folder, no OTP broker (email sign-in fails) and no tag filtering.
 
 ## Reports
+
+`npm run report` builds an HTML page for the latest run and opens it in your browser:
+
+- **Filters:** All / Passed / Failed, category chips (smoke, regression, navigation, onboarding, auth,
+  heatmap, interaction audit…; several chips = any of them) and a search box for names and test-case IDs.
+- **Colours:** each test's name is green when it passed and red when it failed; failed tests come first and are
+  expanded.
+- **Where it failed:** the YAML file and line of the step that failed, the chain of `runFlow` calls that led
+  there (like a stack trace), and the code around it with the failing lines highlighted.
+- Expected vs actual, whether the phone connection (not the app) caused it, the failure screenshot and
+  evidence screenshots (click to enlarge), links to the screen hierarchy and device log, the last steps that
+  passed, and app errors from the device log. Run details (device, app build, tools, environment) sit at the
+  top; private values (test account addresses) show only as "set".
+
+The page is written to `reports/report.html` only when you ask for it, and deleted as soon as a new test run
+starts, so it never shows stale results. The run's own files stay in `reports/runs/`.
 
 See [../reports/README.md](../reports/README.md). Every run: `reports/runs/<date>_<time>_<suite>/` with
 `summary.md`, `run.json`, `junit.xml`, per-flow screenshots, hierarchies and device logs, and the console and

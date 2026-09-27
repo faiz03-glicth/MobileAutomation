@@ -26,7 +26,7 @@ cp .env.example .env
 npm run doctor
 npm run test:smoke
 npm run test:regression
-npm run report
+npm run report          # opens the HTML report of the last run
 ```
 
 `doctor` checks the tools, the connected phone (over Wi-Fi via wireless debugging, or USB), the installed app
@@ -103,11 +103,15 @@ See [docs/test-accounts.md](docs/test-accounts.md).
 
 ## Results and failure diagnostics
 
-Every run writes `reports/runs/<date>_<time>_<suite>/summary.md`: pass/fail per flow with its test cases,
-and for each failure the failing step, expected vs actual, when, the screenshot, screen hierarchy and device
-log, the app's JavaScript/crash log lines, and the device, app build, tools and environment used. Plus
-`run.json`, `junit.xml`, raw Maestro artifacts and the full console log
-([reports/README.md](reports/README.md)).
+`npm run report` opens an **HTML report** of the last run in your browser: filter by Passed / Failed, by
+category (smoke, regression, onboarding, auth, heatmap, navigation…) or by search; passed tests are green and
+failed ones red; each failure shows the **YAML file and line it failed on**, with the code highlighted and the
+chain of subflows that led there, next to its screenshot, expected vs actual, logs and the app build and
+device used. The page is built only when you ask and deleted when the next test run starts
+([docs/running-tests.md](docs/running-tests.md#reports)).
+
+Every run also keeps `reports/runs/<date>_<time>_<suite>/` with `summary.md` (the same in text), `run.json`,
+JUnit XML, raw Maestro artifacts and the full console log ([reports/README.md](reports/README.md)).
 
 ## Adding tests
 

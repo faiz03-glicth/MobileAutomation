@@ -1,20 +1,24 @@
 #!/usr/bin/env node
 // MobileAutomation runner: one entry point for local and CI runs, so every run is set up, filtered and
 // reported the same way. Run `node tools/run.mjs help` (or see docs/running-tests.md).
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync, createWriteStream } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync, createWriteStream } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
+import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 import { capture, findAdb, findMaestro, javaVersion, maestroEnv, maestroVersion, start } from './lib/binaries.mjs';
 import { appInfo, crashLog, deviceInfo, ensureConnected, listDevices, resolveDevice } from './lib/device.mjs';
-import { capabilities, describeConfig, loadConfig, MAESTRO_PARAMS, SECRETS } from './lib/env.mjs';
+import { capabilities, describeConfig, loadConfig, MAESTRO_PARAMS, PRIVATE, SECRETS } from './lib/env.mjs';
+import { renderHtmlReport } from './lib/html-report.mjs';
 import { startOtpBroker } from './lib/otp-broker.mjs';
-import { INFRA_FAILURE, parseJunit, scrubSecrets, writeRunReport } from './lib/report.mjs';
+import { INFRA_FAILURE, parseJunit, rebuildRun, scrubSecrets, writeRunReport } from './lib/report.mjs';
 import { syncTestData } from './sync-test-data.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const WORKSPACE = join(ROOT, 'maestro');
 const REPORTS = join(ROOT, 'reports');
+/** The HTML report: built on request by `report`, deleted when a new test run starts. */
+const HTML_REPORT = join(REPORTS, 'report.html');
 
 const SUITES = {
   smoke: { include: ['smoke'], about: 'fast check that the app is fundamentally usable' },
@@ -32,7 +36,8 @@ const HELP = `MobileAutomation runner
   node tools/run.mjs tag <tags> [options]     flows with any of these tags (e.g. heatmap or TC-HM-005)
   node tools/run.mjs inspect [--all]          list the elements on the phone's current screen
   node tools/run.mjs studio                   open Maestro Studio (build selectors interactively)
-  node tools/run.mjs report [run folder]      print the summary of the latest (or given) run
+  node tools/run.mjs report [run folder]      open the HTML report of the latest (or given) run
+                                              (--text prints the summary instead, --no-open only writes it)
 
 Options for suite, flow and tag:
   --device <serial>      adb serial to use (default: DEVICE_ID in .env, else the only connected device)
@@ -65,6 +70,8 @@ function parseArgs(argv) {
     else if (arg === '--html') options.html = true;
     else if (arg === '--all') options.all = true;
     else if (arg === '--list') options.list = true;
+    else if (arg === '--text') options.text = true;
+    else if (arg === '--no-open') options.noOpen = true;
     else if (arg === '--exclude-tags') options.excludeTags.push(...argv[++i].split(','));
     else if (arg === '-e' || arg === '--env') options.params.push(argv[++i]);
     else options.positional.push(arg);
@@ -221,6 +228,8 @@ async function doctor() {
 // ----- test runs ----------------------------------------------------------------------------------------
 
 async function runTests(kind, value, options) {
+  // A new run makes the previous HTML report stale: remove it (`npm run report` builds a fresh one).
+  rmSync(HTML_REPORT, { force: true });
   const { config } = loadConfig(ROOT);
   syncTestData();
 
@@ -419,7 +428,13 @@ async function runTests(kind, value, options) {
         process.stdout.write('phone unreachable ... ');
       }
     }
-    planned.push({ name: flowName(file), testCases: flowTestCases(file), failure: result.failure });
+    planned.push({
+      name: flowName(file),
+      testCases: flowTestCases(file),
+      file: relative(ROOT, file).split('\\').join('/'),
+      tags: flowTags(file),
+      failure: result.failure,
+    });
     const verdict = `${result.status === 'PASSED' ? 'passed' : 'FAILED'} (${Math.round((Date.now() - began) / 1000)}s)`;
     log(verbose ? `\n${flowName(file)}: ${verdict}` : verdict);
   }
@@ -462,7 +477,9 @@ async function runTests(kind, value, options) {
     problems,
     crashesDuringRun: Boolean(crashes),
   }, attempts);
-  scrubSecrets(runDir, [config.SUPABASE_SERVICE_ROLE_KEY, broker?.token]);
+  // Secrets never reach Maestro; private values (test account addresses) are passed as parameters, so
+  // Maestro's own files contain them: blank them out of this run's files.
+  scrubSecrets(runDir, [config.SUPABASE_SERVICE_ROLE_KEY, broker?.token, ...PRIVATE.map((key) => config[key])]);
 
   log(`\n${run.status}: ${run.passed} passed, ${run.failed} failed${crashes ? ', app crash logged (logs/crash.txt)' : ''}`);
   for (const flow of run.flows.filter((f) => f.status === 'FAILED')) {
@@ -470,6 +487,7 @@ async function runTests(kind, value, options) {
     if (flow.failure.screenshot) log(`      picture : ${relative(ROOT, join(runDir, flow.failure.screenshot))}`);
   }
   log(`\nSummary: ${relative(ROOT, join(runDir, 'summary.md'))}`);
+  log('HTML report: npm run report');
   process.exit(run.status === 'PASSED' ? 0 : 1);
 }
 
@@ -521,17 +539,37 @@ function studio(options) {
   child.on('close', (code) => process.exit(code ?? 0));
 }
 
+function openInBrowser(file) {
+  const command = process.platform === 'win32' ? 'cmd' : process.platform === 'darwin' ? 'open' : 'xdg-open';
+  const args = process.platform === 'win32' ? ['/c', 'start', '""', file] : [file];
+  spawn(command, args, { detached: true, stdio: 'ignore' }).unref();
+}
+
+/**
+ * `report [run folder] [--text] [--no-open]`: re-analyses the latest (or given) run and writes the HTML report
+ * to reports/report.html, then opens it. `--text` prints the markdown summary instead.
+ */
 function report(options) {
   const runsDir = join(REPORTS, 'runs');
   let runDir = options.positional[0] ? resolve(process.cwd(), options.positional[0]) : null;
   if (!runDir) {
-    const runs = existsSync(runsDir) ? readdirSync(runsDir).filter((name) => statSync(join(runsDir, name)).isDirectory()).sort() : [];
-    if (!runs.length) fail('No runs yet in reports/runs.');
+    const runs = existsSync(runsDir)
+      ? readdirSync(runsDir).filter((name) => existsSync(join(runsDir, name, 'run.json'))).sort()
+      : [];
+    if (!runs.length) fail('No runs yet in reports/runs: run some tests first (npm run test:smoke).');
     runDir = join(runsDir, runs[runs.length - 1]);
   }
-  const summary = join(runDir, 'summary.md');
-  if (!existsSync(summary)) fail(`No summary in ${runDir}.`);
-  log(readFileSync(summary, 'utf8'));
+  if (!existsSync(join(runDir, 'run.json'))) fail(`${relative(ROOT, runDir)} has no run.json.`);
+  const run = rebuildRun(runDir);
+  if (options.text) {
+    log(readFileSync(join(runDir, 'summary.md'), 'utf8'));
+    return;
+  }
+  const assetBase = `${relative(REPORTS, runDir).split('\\').join('/')}/`;
+  writeFileSync(HTML_REPORT, renderHtmlReport(run, { assetBase }));
+  log(`${run.status}: ${run.passed} passed, ${run.failed} failed (${run.id})`);
+  log(`HTML report: ${relative(ROOT, HTML_REPORT)} (deleted when the next test run starts)`);
+  if (!options.noOpen) openInBrowser(HTML_REPORT);
 }
 
 // ----- main ---------------------------------------------------------------------------------------------

@@ -1,7 +1,8 @@
 # The checks for one audit row (output.el). Any failing step fails this subflow; audit_element.yaml records it.
 appId: ${APP_ID}
 ---
-# 1. Expected visibility: on screen (scrolled into view if needed) and enabled. 2. One tap, no retry.
+# 1. Expected visibility: scrolled to the middle of the screen (so a floating bar at the edge can't sit on it;
+#    see docs/testability-gaps.md F8) and enabled. 2. One tap, no retry.
 - runFlow:
     when:
       true: ${output.el.id != ''}
@@ -10,6 +11,7 @@ appId: ${APP_ID}
           element:
             id: ${output.el.id}
           direction: DOWN
+          centerElement: true
           timeout: ${output.timeouts.scroll}
           label: '${output.el.name}: visible'
       - assertVisible:
@@ -30,6 +32,7 @@ appId: ${APP_ID}
             childOf:
               id: ${output.audit.screen}
           direction: DOWN
+          centerElement: true
           timeout: ${output.timeouts.scroll}
           label: '${output.el.name}: visible'
       - assertVisible:

@@ -5,6 +5,7 @@ folder; nothing is overwritten.
 
 ```text
 reports/
+├── report.html          ← only after `npm run report`; deleted when the next test run starts
 ├── runs/<date>_<time>_<suite>/
 │   ├── summary.md        ← start here: results, and for each failure the test cases, failing step, expected
 │   │                       vs actual, screenshot, hierarchy and device-log links, the app's JS/crash log
@@ -30,6 +31,8 @@ reports/
 Mapping to the usual layout: **results** = `summary.md`, `run.json`, `junit/`; **screenshots** =
 `maestro/**/screenshots` and `maestro/**/takeScreenshot`; **logs** = `logs/` and `maestro/**/logs`.
 
-Print the latest summary with `npm run report`. Delete old runs whenever you like.
+`npm run report` writes `reports/report.html` (the interactive HTML report of the latest run) and opens it;
+the next test run deletes it. `npm run report -- --text` prints the summary instead. Delete old runs
+whenever you like.
 Secrets are never passed to Maestro; as a safety net the runner also scrubs known secret values from every
 text file in a run folder before it finishes.
