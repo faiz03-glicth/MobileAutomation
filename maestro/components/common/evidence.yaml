@@ -1,0 +1,6 @@
+# Saves a named screenshot into the run's report (reports/runs/<run>/maestro/.../takeScreenshot/).
+# For what Maestro can't assert from the view hierarchy: animations, toasts, colours.
+#   env: NAME (required)
+appId: ${APP_ID}
+---
+- takeScreenshot: ${'evidence-' + NAME}

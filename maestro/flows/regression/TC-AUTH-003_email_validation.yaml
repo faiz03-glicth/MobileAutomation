@@ -1,0 +1,95 @@
+# The email step only accepts a valid address, and Back (on-screen and Android) walks back one step at a time.
+# Sends no email.
+appId: ${APP_ID}
+name: 'TC-AUTH-003 Email step - validation and Back'
+tags:
+  - regression
+  - auth
+  - TC-AUTH-003
+  - TC-AUTH-005
+properties:
+  testCases: 'TC-AUTH-003, TC-AUTH-005'
+onFlowStart:
+  - runFlow: ../../components/common/bootstrap.yaml
+---
+- runFlow: ../../components/common/launch_fresh.yaml
+- runFlow:
+    file: ../../screens/login/open_login.yaml
+    env:
+      INTENT: existing
+- tapOn:
+    id: ${output.ids.login.continueEmail}
+    label: Tap "Continue with email"
+- extendedWaitUntil:
+    visible: ${output.labels.login.emailTitle}
+    timeout: ${output.timeouts.screen}
+    label: 'Expect: the email step'
+
+# Empty field: Send code disabled.
+- runFlow:
+    file: ../../components/login/email_field.yaml
+    env:
+      EMAIL: ''
+      SEND_READY: 'false'
+
+# Every invalid address keeps it disabled.
+- evalScript: ${output.emailIndex = 0}
+- repeat:
+    times: ${output.inputs.email.invalid.length}
+    commands:
+      - runFlow:
+          file: ../../components/login/email_field.yaml
+          env:
+            EMAIL: ${output.inputs.email.invalid[output.emailIndex]}
+            SEND_READY: 'false'
+      - evalScript: ${output.emailIndex = output.emailIndex + 1}
+
+# Valid addresses enable it, including one in capitals (the app lower-cases it). Leading or trailing spaces
+# aren't typed: Gboard rewrites them (" .com" appears), so the result would test the keyboard, not the app.
+- runFlow:
+    file: ../../components/login/email_field.yaml
+    env:
+      EMAIL: ${output.inputs.email.valid}
+      SEND_READY: 'true'
+- runFlow:
+    file: ../../components/login/email_field.yaml
+    env:
+      EMAIL: ${output.inputs.email.validWithCaps}
+      SEND_READY: 'true'
+- hideKeyboard
+
+# On-screen Back: email step → sign-in options → Welcome.
+- runFlow:
+    file: ../../components/navigation/nav_back.yaml
+    env:
+      SCREEN: ${output.screens.loginExisting}
+- assertVisible:
+    id: ${output.ids.login.continueEmail}
+    label: 'Expect: back on the sign-in options'
+- runFlow:
+    file: ../../components/navigation/nav_back.yaml
+    env:
+      SCREEN: ${output.screens.loginExisting}
+- runFlow:
+    file: ../../components/common/wait_for_screen.yaml
+    env:
+      SCREEN: welcome
+
+# Android Back on the email step also goes back one step, like it does between onboarding pages.
+- runFlow:
+    file: ../../screens/login/open_login.yaml
+    env:
+      INTENT: new
+- tapOn:
+    id: ${output.ids.login.continueEmail}
+    label: Tap "Continue with email"
+- extendedWaitUntil:
+    visible: ${output.labels.login.emailTitle}
+    timeout: ${output.timeouts.screen}
+- hideKeyboard
+- back
+- extendedWaitUntil:
+    visible:
+      id: ${output.ids.login.continueEmail}
+    timeout: ${output.timeouts.screen}
+    label: 'Expect: Android Back on the email step returns to the sign-in options'

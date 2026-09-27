@@ -1,0 +1,25 @@
+# From Welcome to the Login screen. "Get started" opens the new-account variant; "I already have an account"
+# opens the returning-person variant.
+#   env: INTENT — new | existing
+appId: ${APP_ID}
+---
+- runFlow:
+    when:
+      true: ${INTENT == 'new'}
+    commands:
+      - tapOn:
+          id: ${output.ids.onboarding.primary}
+          retryTapIfNoChange: false
+          label: Tap "Get started"
+- runFlow:
+    when:
+      true: ${INTENT == 'existing'}
+    commands:
+      - tapOn:
+          id: ${output.ids.onboarding.haveAccount}
+          retryTapIfNoChange: false
+          label: Tap "I already have an account"
+- runFlow:
+    file: ../../components/common/wait_for_screen.yaml
+    env:
+      SCREEN: ${output.loginScreenKey(INTENT)}

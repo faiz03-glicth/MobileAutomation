@@ -1,0 +1,92 @@
+# The checks for one audit row (output.el). Any failing step fails this subflow; audit_element.yaml records it.
+appId: ${APP_ID}
+---
+# 1. Expected visibility: on screen (scrolled into view if needed) and enabled. 2. One tap, no retry.
+- runFlow:
+    when:
+      true: ${output.el.id != ''}
+    commands:
+      - scrollUntilVisible:
+          element:
+            id: ${output.el.id}
+          direction: DOWN
+          timeout: ${output.timeouts.scroll}
+          label: '${output.el.name}: visible'
+      - assertVisible:
+          id: ${output.el.id}
+          enabled: true
+          label: '${output.el.name}: enabled'
+      - tapOn:
+          id: ${output.el.id}
+          retryTapIfNoChange: false
+          label: '${output.el.name}: one tap'
+- runFlow:
+    when:
+      true: ${output.el.id == ''}
+    commands:
+      - scrollUntilVisible:
+          element:
+            text: ${output.el.text}
+            childOf:
+              id: ${output.audit.screen}
+          direction: DOWN
+          timeout: ${output.timeouts.scroll}
+          label: '${output.el.name}: visible'
+      - assertVisible:
+          text: ${output.el.text}
+          childOf:
+            id: ${output.audit.screen}
+          enabled: true
+          label: '${output.el.name}: enabled'
+      - tapOn:
+          text: ${output.el.text}
+          childOf:
+            id: ${output.audit.screen}
+          retryTapIfNoChange: false
+          label: '${output.el.name}: one tap'
+
+# 3. Expected result: the destination appears (a tap swallowed by an overlay, or a wrong route, fails here).
+- extendedWaitUntil:
+    visible:
+      id: ${output.el.expect}
+    timeout: ${output.timeouts.screen}
+    label: '${output.el.name}: ${output.el.expect} appears after one tap'
+- waitForAnimationToEnd:
+    timeout: ${output.timeouts.animation}
+
+# 4. Return the way the row says, and check the audited screen is back.
+- runFlow:
+    when:
+      true: ${output.el.back == 'nav'}
+    file: ../navigation/nav_back.yaml
+    env:
+      SCREEN: ${output.el.expect}
+- runFlow:
+    when:
+      true: ${output.el.back == 'system'}
+    commands:
+      - back
+- runFlow:
+    when:
+      true: ${output.el.back == 'sheet'}
+    file: ../sheets/close_sheet.yaml
+    env:
+      SHEET: ${output.el.expect}
+- runFlow:
+    when:
+      true: ${output.el.back.indexOf('tab:') == 0}
+    file: ../navigation/go_to_tab.yaml
+    env:
+      TAB: ${output.el.back.slice(4)}
+- runFlow:
+    when:
+      true: ${output.el.back != 'none'}
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: ${output.audit.screen}
+          timeout: ${output.timeouts.screen}
+          label: '${output.el.name}: back on ${output.audit.screen}'
+      - waitForAnimationToEnd:
+          timeout: ${output.timeouts.animation}
+- evalScript: ${output.el.ok = true}

@@ -1,0 +1,14 @@
+# Fastest way to a known Home: fresh install, Skip on Welcome (continues as a guest with no check-ins).
+appId: ${APP_ID}
+---
+- runFlow: launch_fresh.yaml
+- tapOn:
+    id: ${output.ids.onboarding.skip}
+    label: Skip onboarding on Welcome
+- extendedWaitUntil:
+    visible:
+      id: ${output.screens.home}
+    timeout: ${output.timeouts.screen}
+    label: 'Expect: Home after skipping onboarding as a guest'
+- waitForAnimationToEnd:
+    timeout: ${output.timeouts.animation}

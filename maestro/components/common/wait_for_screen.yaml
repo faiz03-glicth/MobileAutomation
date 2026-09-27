@@ -1,0 +1,12 @@
+# Waits for a screen by its key in test-data/ui-contract.json "screens" (e.g. SCREEN: home), then for the
+# transition to settle, so the next tap lands on the new screen and not on one that is leaving.
+#   env: SCREEN (required)
+appId: ${APP_ID}
+---
+- extendedWaitUntil:
+    visible:
+      id: ${output.screens[SCREEN]}
+    timeout: ${output.timeouts.screen}
+    label: 'Expect: ${SCREEN} screen (${output.screens[SCREEN]})'
+- waitForAnimationToEnd:
+    timeout: ${output.timeouts.animation}

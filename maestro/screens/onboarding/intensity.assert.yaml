@@ -1,0 +1,40 @@
+# Intensity (onboarding page 2 of 3): explains the five heatmap levels.
+appId: ${APP_ID}
+---
+- assertVisible:
+    id: ${output.screens.intensity}
+    label: 'Intensity: screen shown'
+- evalScript: ${output.levels = output.labels.onboarding.intensityLevels}
+- assertVisible:
+    text: ${output.levels[0]}
+    label: 'Intensity: level "${output.levels[0]}"'
+- assertVisible:
+    text: ${output.levels[1]}
+    label: 'Intensity: level "${output.levels[1]}"'
+- assertVisible:
+    text: ${output.levels[2]}
+    label: 'Intensity: level "${output.levels[2]}"'
+- assertVisible:
+    text: ${output.levels[3]}
+    label: 'Intensity: level "${output.levels[3]}"'
+- assertVisible:
+    text: ${output.levels[4]}
+    label: 'Intensity: level "${output.levels[4]}"'
+- assertVisible:
+    text: ${output.step(2)}
+    label: 'Intensity: page indicator says step 2 of 3'
+- assertVisible:
+    id: ${output.ids.onboarding.primary}
+    text: ${output.labels.onboarding.continue}
+    enabled: true
+    label: 'Intensity: "Continue" enabled'
+- assertVisible:
+    id: ${output.ids.onboarding.skip}
+    enabled: true
+    label: 'Intensity: Skip available'
+- assertVisible:
+    text: ${output.labels.navBack}
+    childOf:
+      id: ${output.screens.intensity}
+    enabled: true
+    label: 'Intensity: Back available'

@@ -1,0 +1,33 @@
+# Welcome (onboarding page 1 of 3): what a first-time visitor must see and be able to use.
+appId: ${APP_ID}
+---
+- assertVisible:
+    id: ${output.screens.welcome}
+    label: 'Welcome: screen shown'
+- assertVisible:
+    id: ${output.ids.onboarding.heroHeatmap}
+    label: 'Welcome: hero heatmap rendered'
+- assertVisible:
+    text: ${output.labels.onboarding.welcomeTitle}
+    label: 'Welcome: title "${output.labels.onboarding.welcomeTitle}"'
+- assertVisible:
+    text: ${output.step(1)}
+    label: 'Welcome: page indicator says step 1 of 3'
+- assertVisible:
+    id: ${output.ids.onboarding.primary}
+    text: ${output.labels.onboarding.getStarted}
+    enabled: true
+    label: 'Welcome: "Get started" enabled'
+- assertVisible:
+    id: ${output.ids.onboarding.haveAccount}
+    enabled: true
+    label: 'Welcome: "I already have an account" enabled'
+- assertVisible:
+    id: ${output.ids.onboarding.skip}
+    enabled: true
+    label: 'Welcome: Skip enabled'
+- assertNotVisible:
+    text: ${output.labels.navBack}
+    childOf:
+      id: ${output.screens.welcome}
+    label: 'Welcome: no Back button on the first page'

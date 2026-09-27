@@ -1,0 +1,20 @@
+{
+  "_about": "Inputs the test scenarios type or pick. Framework-neutral; Maestro reads them as output.data.inputs.",
+  "email": {
+    "invalid": ["not-an-email", "person@", "person@example"],
+    "valid": "person@example.com",
+    "validWithCaps": "Person@Example.COM"
+  },
+  "otp": {
+    "wrong": "000000",
+    "incomplete": "12345"
+  },
+  "onboarding": {
+    "activities": ["workout", "deep-work", "reading", "meditate", "walk", "water"],
+    "selectedByDefault": ["workout", "deep-work", "reading"],
+    "pick": "walk"
+  },
+  "checkIn": {
+    "activity": "workout"
+  }
+}

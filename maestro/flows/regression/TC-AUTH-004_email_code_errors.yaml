@@ -1,0 +1,78 @@
+# The code step: resend cooldown, an incomplete code doesn't submit, a wrong code is rejected with a clear
+# message, and "Use a different email" goes back. Sends one real email to TEST_USER_EMAIL; signs nobody in.
+appId: ${APP_ID}
+name: 'TC-AUTH-004 Code step - cooldown, incomplete and wrong codes'
+tags:
+  - regression
+  - auth
+  - requires-test-email
+  - TC-AUTH-004
+properties:
+  testCases: 'TC-AUTH-004'
+onFlowStart:
+  - runFlow: ../../components/common/bootstrap.yaml
+---
+- runFlow: ../../components/common/launch_fresh.yaml
+- runFlow:
+    file: ../../screens/login/open_login.yaml
+    env:
+      INTENT: existing
+- runFlow:
+    file: ../../screens/login/request_code.yaml
+    env:
+      INTENT: existing
+      EMAIL: ${output.env.testUserEmail}
+
+# Resend waits for its cooldown; changing the address is always possible.
+- assertVisible:
+    id: ${output.ids.login.resend}
+    text: ${output.labels.login.resendCooldown}
+    enabled: false
+    label: 'Resend is disabled during its cooldown and shows the time left'
+- assertVisible:
+    id: ${output.ids.login.differentEmail}
+    enabled: true
+    label: '"Use a different email" enabled'
+
+# Five digits: nothing is submitted.
+- runFlow:
+    file: ../../components/login/enter_code.yaml
+    env:
+      CODE: ${output.inputs.otp.incomplete}
+- assertNotVisible:
+    text: ${output.labels.login.verifying}
+    label: 'An incomplete code is not submitted'
+- assertNotVisible:
+    text: ${output.labels.login.invalidCode}
+    label: 'No error for an incomplete code'
+
+# A wrong code: rejected, the person stays on the code step with an explanation.
+- runFlow:
+    file: ../../components/login/enter_code.yaml
+    env:
+      CODE: ${output.inputs.otp.wrong}
+- extendedWaitUntil:
+    visible: ${output.labels.login.invalidCode}
+    timeout: ${output.timeouts.network}
+    label: 'Expect: "That code is wrong or has expired" under the code'
+- runFlow:
+    file: ../../components/common/evidence.yaml
+    env:
+      NAME: login-wrong-code
+- assertVisible:
+    id: ${output.ids.login.otpInput}
+    label: 'Still on the code step'
+- assertNotVisible:
+    id: ${output.screens.home}
+    label: 'Not signed in'
+
+# Use a different email → back to the email step.
+- hideKeyboard
+- tapOn:
+    id: ${output.ids.login.differentEmail}
+    label: Tap "Use a different email"
+- extendedWaitUntil:
+    visible:
+      id: ${output.ids.login.emailInput}
+    timeout: ${output.timeouts.screen}
+    label: 'Expect: the email step again'

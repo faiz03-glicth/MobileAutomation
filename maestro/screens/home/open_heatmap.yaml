@@ -1,0 +1,13 @@
+# Home → the full Heatmap: tap the heatmap card's year title ("2026 ⌄").
+appId: ${APP_ID}
+---
+- tapOn:
+    text: ${output.labels.home.heatmapHeader}
+    childOf:
+      id: ${output.screens.home}
+    retryTapIfNoChange: false
+    label: Tap the heatmap title on Home
+- runFlow:
+    file: ../../components/common/wait_for_screen.yaml
+    env:
+      SCREEN: heatmap

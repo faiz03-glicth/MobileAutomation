@@ -1,0 +1,29 @@
+# Full email sign-in with the dummy account: request a code, get a valid one from the runner's OTP broker
+# (Supabase admin API; no inbox is read, no secret reaches Maestro), type it, land on Home.
+#   env: INTENT — new | existing
+appId: ${APP_ID}
+---
+- assertTrue:
+    condition: ${output.env.otpBrokerUrl.length > 0}
+    label: 'OTP broker running (needs SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env, see docs/test-accounts.md)'
+- runFlow:
+    file: request_code.yaml
+    env:
+      INTENT: ${INTENT}
+      EMAIL: ${output.env.testUserEmail}
+- runScript:
+    file: ../../scripts/email-code.js
+    label: Get a valid sign-in code for the dummy account
+- runFlow:
+    file: ../../components/login/enter_code.yaml
+    env:
+      CODE: ${output.otp.code}
+- runFlow:
+    file: ../../components/common/evidence.yaml
+    env:
+      NAME: login-verifying-code
+- extendedWaitUntil:
+    visible:
+      id: ${output.screens.home}
+    timeout: ${output.timeouts.network}
+    label: 'Expect: Home after entering a valid code'

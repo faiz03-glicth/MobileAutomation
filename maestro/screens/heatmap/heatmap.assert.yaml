@@ -1,0 +1,75 @@
+# The full Heatmap screen, in Year or Month view, showing the current period.
+#   env: VIEW — year | month
+appId: ${APP_ID}
+---
+- assertVisible:
+    id: ${output.screens.heatmap}
+    label: 'Heatmap: screen shown'
+- assertVisible:
+    text: ${output.labels.heatmap.title}
+    childOf:
+      id: ${output.screens.heatmap}
+    label: 'Heatmap: title "Heatmap"'
+- assertVisible:
+    text: ${output.labels.navBack}
+    childOf:
+      id: ${output.screens.heatmap}
+    enabled: true
+    label: 'Heatmap: Back available'
+- runFlow:
+    when:
+      true: ${VIEW == 'year'}
+    label: 'Heatmap (Year): this year, with its months and totals'
+    commands:
+      - assertVisible:
+          id: ${output.ids.heatmap.viewYear}
+          checked: true
+      - assertVisible:
+          id: ${output.ids.heatmap.title}
+          text: ${output.today.year}
+      - assertVisible:
+          id: ${output.ids.heatmap.yearTotal}
+      - assertVisible:
+          id: ${output.fill(output.ids.heatmap.month)}
+          enabled: true
+      - assertVisible:
+          text: ${output.labels.heatmap.previousYear}
+          enabled: true
+      - assertVisible:
+          text: ${output.labels.heatmap.nextYear}
+          enabled: false
+- runFlow:
+    when:
+      true: ${VIEW == 'month'}
+    label: 'Heatmap (Month): this month, with a tile for today'
+    commands:
+      - assertVisible:
+          id: ${output.ids.heatmap.viewMonth}
+          checked: true
+      - assertVisible:
+          id: ${output.ids.heatmap.title}
+          text: ${output.today.monthLong + ' ' + output.today.year}
+      - assertVisible:
+          id: ${output.fill(output.ids.heatmap.dayTile)}
+          enabled: true
+      - assertVisible:
+          text: ${output.labels.heatmap.previousMonth}
+          enabled: true
+      - assertVisible:
+          text: ${output.labels.heatmap.nextMonth}
+          enabled: false
+# The screen scrolls: the intensity guide at the bottom must be reachable, and scrolling back must work.
+- scrollUntilVisible:
+    element: ${output.labels.heatmap.intensityCard}
+    direction: DOWN
+    timeout: ${output.timeouts.scroll}
+    label: 'Heatmap: scrolls down to "How intensity works"'
+- assertVisible:
+    text: ${output.labels.onboarding.intensityLevels[4]}
+    label: 'Heatmap: intensity guide lists every level up to "Peak"'
+- scrollUntilVisible:
+    element:
+      id: ${output.ids.heatmap.viewYear}
+    direction: UP
+    timeout: ${output.timeouts.scroll}
+    label: 'Heatmap: scrolls back up to the view switch'

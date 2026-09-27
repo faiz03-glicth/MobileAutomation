@@ -1,0 +1,26 @@
+{
+  "name": "mobile-automation",
+  "version": "0.1.0",
+  "private": true,
+  "description": "End-to-end mobile UI automation for the Streak app: requirement-based test cases, Maestro flows today, room for other frameworks later.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "doctor": "node tools/run.mjs doctor",
+    "test:smoke": "node tools/run.mjs suite smoke",
+    "test:regression": "node tools/run.mjs suite regression",
+    "test:navigation": "node tools/run.mjs suite navigation",
+    "test:google": "node tools/run.mjs suite google",
+    "test:all": "node tools/run.mjs suite all",
+    "test:flow": "node tools/run.mjs flow",
+    "test:tag": "node tools/run.mjs tag",
+    "test:debug": "node tools/run.mjs flow --debug",
+    "inspect": "node tools/run.mjs inspect",
+    "studio": "node tools/run.mjs studio",
+    "report": "node tools/run.mjs report",
+    "sync:test-data": "node tools/sync-test-data.mjs",
+    "check": "node tools/check.mjs"
+  }
+}

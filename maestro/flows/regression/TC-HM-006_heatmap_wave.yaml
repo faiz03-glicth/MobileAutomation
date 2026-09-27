@@ -1,0 +1,99 @@
+# The heatmap "wave": holding the Welcome heatmap (or Login's logo mark, drawn from it) collapses it and
+# stacks it back up diagonal by diagonal. The animation must play, settle, and never block the controls
+# around it, even when they are pressed while it is still running. Screenshots before, during and after are
+# the visual evidence (Maestro can't measure animation frames; see docs/testability-gaps.md).
+appId: ${APP_ID}
+name: 'TC-HM-006 Heatmap wave - hold to rebuild, never blocks interaction'
+tags:
+  - regression
+  - heatmap
+  - onboarding
+  - TC-HM-006
+properties:
+  testCases: 'TC-HM-006'
+onFlowStart:
+  - runFlow: ../../components/common/bootstrap.yaml
+---
+- runFlow: ../../components/common/launch_fresh.yaml
+- waitForAnimationToEnd:
+    timeout: ${output.timeouts.animation}
+- runFlow:
+    file: ../../components/common/evidence.yaml
+    env:
+      NAME: wave-1-before
+
+# Hold (3 s, the charge is under 1 s): collapse and rebuild start.
+- longPressOn:
+    id: ${output.ids.onboarding.heroHeatmap}
+    label: Press and hold the Welcome heatmap
+- runFlow:
+    file: ../../components/common/evidence.yaml
+    env:
+      NAME: wave-2-rebuilding
+- assertVisible:
+    id: ${output.ids.onboarding.heroHeatmap}
+    label: 'The heatmap is still there while it rebuilds'
+
+# Pressed mid-animation, "Get started" still works first time.
+- tapOn:
+    id: ${output.ids.onboarding.primary}
+    retryTapIfNoChange: false
+    label: Tap "Get started" while the wave is still running
+- runFlow:
+    file: ../../components/common/wait_for_screen.yaml
+    env:
+      SCREEN: loginNew
+
+# Login's logo mark is holdable too; the buttons under it keep working.
+- longPressOn:
+    id: ${output.ids.login.logo}
+    label: Press and hold the Login logo mark
+- runFlow:
+    file: ../../components/common/evidence.yaml
+    env:
+      NAME: wave-3-logo
+- tapOn:
+    id: ${output.ids.login.continueEmail}
+    retryTapIfNoChange: false
+    label: Tap "Continue with email" right after the hold
+- extendedWaitUntil:
+    visible: ${output.labels.login.emailTitle}
+    timeout: ${output.timeouts.screen}
+    label: 'Expect: the email step'
+- hideKeyboard
+- runFlow:
+    file: ../../components/navigation/nav_back.yaml
+    env:
+      SCREEN: ${output.screens.loginNew}
+- runFlow:
+    file: ../../components/navigation/nav_back.yaml
+    env:
+      SCREEN: ${output.screens.loginNew}
+- runFlow:
+    file: ../../components/common/wait_for_screen.yaml
+    env:
+      SCREEN: welcome
+
+# Back on Welcome: the animation has settled and the heatmap is whole.
+- runFlow:
+    file: ../../components/common/evidence.yaml
+    env:
+      NAME: wave-4-settled
+- assertVisible:
+    id: ${output.ids.onboarding.heroHeatmap}
+    label: 'The heatmap is rendered after the wave'
+
+# Holding twice in a row (the second hold lands while the first rebuild runs) doesn't break anything.
+- repeat:
+    times: 2
+    commands:
+      - longPressOn:
+          id: ${output.ids.onboarding.heroHeatmap}
+- tapOn:
+    id: ${output.ids.onboarding.haveAccount}
+    retryTapIfNoChange: false
+    label: Tap "I already have an account" after repeated holds
+- runFlow:
+    file: ../../components/common/wait_for_screen.yaml
+    env:
+      SCREEN: loginExisting

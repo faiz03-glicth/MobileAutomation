@@ -1,0 +1,18 @@
+# Bottom tab bar: one tap on a tab must open its screen and mark that tab selected. A tap that needs a retry,
+# lands on the wrong tab, or leaves the old tab highlighted fails here.
+#   env: TAB — home | insights | history | profile
+appId: ${APP_ID}
+---
+- tapOn:
+    id: ${output.ids.tabs[TAB]}
+    retryTapIfNoChange: false
+    label: 'Tap the ${TAB} tab once'
+- extendedWaitUntil:
+    visible:
+      id: ${output.screens[TAB]}
+    timeout: ${output.timeouts.screen}
+    label: 'Expect: ${TAB} screen after a single tap'
+- assertVisible:
+    id: ${output.ids.tabs[TAB]}
+    selected: true
+    label: 'Expect: the ${TAB} tab is marked selected'

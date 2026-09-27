@@ -1,0 +1,54 @@
+# A returning person signs in with the dummy email account and reaches Home and the Heatmap.
+# Needs TEST_USER_EMAIL plus the OTP broker's Supabase settings (docs/test-accounts.md).
+appId: ${APP_ID}
+name: 'SMK-02 Email journey - dummy account sign-in, Home, Heatmap'
+tags:
+  - smoke
+  - regression
+  - auth
+  - heatmap
+  - requires-otp-admin
+  - TC-AUTH-002
+properties:
+  testCases: 'TC-AUTH-002'
+onFlowStart:
+  - runFlow: ../../components/common/bootstrap.yaml
+---
+- runFlow: ../../components/common/launch_fresh.yaml
+- runFlow:
+    file: ../../screens/login/open_login.yaml
+    env:
+      INTENT: existing
+- runFlow:
+    file: ../../screens/login/login.assert.yaml
+    env:
+      INTENT: existing
+- runFlow:
+    file: ../../screens/login/sign_in_with_email.yaml
+    env:
+      INTENT: existing
+- runFlow:
+    file: ../../components/common/wait_for_screen.yaml
+    env:
+      SCREEN: home
+- runFlow:
+    file: ../../screens/home/home.assert.yaml
+    env:
+      EMPTY: 'false'
+- runFlow: ../../screens/home/open_heatmap.yaml
+- runFlow:
+    file: ../../screens/heatmap/heatmap.assert.yaml
+    env:
+      VIEW: year
+- runFlow:
+    file: ../../components/navigation/nav_back.yaml
+    env:
+      SCREEN: ${output.screens.heatmap}
+- runFlow:
+    file: ../../components/navigation/go_to_tab.yaml
+    env:
+      TAB: profile
+- runFlow:
+    file: ../../screens/profile/profile.assert.yaml
+    env:
+      WHO: ${output.literal(output.env.testUserEmail.trim().toLowerCase())}

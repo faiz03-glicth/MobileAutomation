@@ -1,0 +1,69 @@
+# The whole first-run journey without any account: is the app fundamentally usable?
+appId: ${APP_ID}
+name: 'SMK-01 Guest journey - launch, onboarding, login, Home, Heatmap'
+tags:
+  - smoke
+  - onboarding
+  - auth
+  - heatmap
+  - TC-ONB-001
+  - TC-ONB-003
+  - TC-AUTH-005
+  - TC-HM-001
+properties:
+  testCases: 'TC-ONB-001, TC-ONB-003, TC-AUTH-005, TC-HM-001'
+onFlowStart:
+  - runFlow: ../../components/common/bootstrap.yaml
+---
+# Launch → Welcome
+- runFlow: ../../components/common/launch_fresh.yaml
+- runFlow: ../../screens/onboarding/welcome.assert.yaml
+
+# Get started → Login (new) → continue as a guest
+- runFlow:
+    file: ../../screens/login/open_login.yaml
+    env:
+      INTENT: new
+- runFlow:
+    file: ../../screens/login/login.assert.yaml
+    env:
+      INTENT: new
+- tapOn:
+    id: ${output.ids.login.skip}
+    label: Skip sign-in (continue as a guest)
+- runFlow:
+    file: ../../components/common/wait_for_screen.yaml
+    env:
+      SCREEN: intensity
+
+# Intensity → Setup → Home
+- runFlow: ../../screens/onboarding/finish_setup.yaml
+- runFlow:
+    file: ../../screens/home/home.assert.yaml
+    env:
+      EMPTY: 'true'
+
+# Home → Heatmap → back to Home
+- runFlow: ../../screens/home/open_heatmap.yaml
+- runFlow:
+    file: ../../screens/heatmap/heatmap.assert.yaml
+    env:
+      VIEW: year
+- runFlow:
+    file: ../../components/navigation/nav_back.yaml
+    env:
+      SCREEN: ${output.screens.heatmap}
+- runFlow:
+    file: ../../components/common/wait_for_screen.yaml
+    env:
+      SCREEN: home
+
+# Profile knows this is a guest
+- runFlow:
+    file: ../../components/navigation/go_to_tab.yaml
+    env:
+      TAB: profile
+- runFlow:
+    file: ../../screens/profile/profile.assert.yaml
+    env:
+      WHO: ${output.labels.profile.guestName}

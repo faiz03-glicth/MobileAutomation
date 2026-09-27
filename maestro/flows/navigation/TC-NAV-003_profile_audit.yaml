@@ -1,0 +1,23 @@
+# Interaction audit of Profile and the settings screens it leads to (table: test-data/interaction-audit.json
+# → profile). Alternates the in-app Back and Android Back to come back.
+appId: ${APP_ID}
+name: 'TC-NAV-003 Interaction audit - Profile and settings'
+tags:
+  - navigation
+  - regression
+  - interaction-audit
+  - TC-NAV-003
+properties:
+  testCases: 'TC-NAV-003'
+onFlowStart:
+  - runFlow: ../../components/common/bootstrap.yaml
+---
+- runFlow: ../../components/common/start_as_guest.yaml
+- runFlow:
+    file: ../../components/navigation/go_to_tab.yaml
+    env:
+      TAB: profile
+- runFlow:
+    file: ../../components/audit/audit_screen.yaml
+    env:
+      AUDIT: profile

@@ -1,0 +1,38 @@
+# Skip on Welcome goes straight to Home as a guest, and coming back to the app later skips onboarding.
+appId: ${APP_ID}
+name: 'TC-ONB-006 Skip on Welcome, guest session survives a restart'
+tags:
+  - regression
+  - onboarding
+  - auth
+  - TC-ONB-006
+  - TC-AUTH-007
+properties:
+  testCases: 'TC-ONB-006, TC-AUTH-007'
+onFlowStart:
+  - runFlow: ../../components/common/bootstrap.yaml
+---
+- runFlow: ../../components/common/start_as_guest.yaml
+- runFlow:
+    file: ../../screens/home/home.assert.yaml
+    env:
+      EMPTY: 'true'
+- runFlow:
+    file: ../../components/navigation/go_to_tab.yaml
+    env:
+      TAB: profile
+- runFlow:
+    file: ../../screens/profile/profile.assert.yaml
+    env:
+      WHO: ${output.labels.profile.guestName}
+
+# Kill and reopen: straight to Home, not onboarding.
+- runFlow: ../../components/common/relaunch_keep_state.yaml
+- extendedWaitUntil:
+    visible:
+      id: ${output.screens.home}
+    timeout: ${output.timeouts.launch}
+    label: 'Expect: a returning guest opens on Home'
+- assertNotVisible:
+    id: ${output.screens.welcome}
+    label: 'Expect: onboarding is not shown again'

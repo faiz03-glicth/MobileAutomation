@@ -1,0 +1,65 @@
+# Home's heatmap card moves through time a month at a step and never past this month.
+appId: ${APP_ID}
+name: 'TC-HM-007 Home heatmap - previous and next months'
+tags:
+  - regression
+  - heatmap
+  - TC-HM-007
+properties:
+  testCases: 'TC-HM-007'
+onFlowStart:
+  - runFlow: ../../components/common/bootstrap.yaml
+---
+- runFlow: ../../components/common/start_as_guest.yaml
+- assertVisible:
+    text: ${output.homeHeader(0)}
+    label: 'Shows the 3 months ending this month'
+- assertVisible:
+    text: ${output.labels.home.nextMonths}
+    enabled: false
+    label: '"Next months" disabled at the latest months'
+
+- tapOn:
+    text: ${output.labels.home.previousMonths}
+    retryTapIfNoChange: false
+    label: Previous months
+- assertVisible:
+    text: ${output.homeHeader(1)}
+    label: 'Shows the 3 months ending last month'
+- assertVisible:
+    id: ${output.monthTarget(1)}
+    label: 'Last month is on the heatmap'
+- assertNotVisible:
+    id: ${output.monthTarget(0)}
+    label: 'This month has moved off the heatmap'
+- assertVisible:
+    text: ${output.labels.home.nextMonths}
+    enabled: true
+    label: '"Next months" enabled'
+
+- tapOn:
+    text: ${output.labels.home.previousMonths}
+    retryTapIfNoChange: false
+    label: Previous months again
+- assertVisible:
+    text: ${output.homeHeader(2)}
+    label: 'Shows the 3 months ending two months ago'
+
+- tapOn:
+    text: ${output.labels.home.nextMonths}
+    retryTapIfNoChange: false
+    label: Next months
+- assertVisible:
+    text: ${output.homeHeader(1)}
+    label: 'One step forward'
+- tapOn:
+    text: ${output.labels.home.nextMonths}
+    retryTapIfNoChange: false
+    label: Next months again
+- assertVisible:
+    text: ${output.homeHeader(0)}
+    label: 'Back to the latest months'
+- assertVisible:
+    text: ${output.labels.home.nextMonths}
+    enabled: false
+    label: '"Next months" disabled again'

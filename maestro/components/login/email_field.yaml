@@ -1,0 +1,30 @@
+# Replaces the email field's text and checks whether "Send code" accepts it.
+#   env: EMAIL      — text to type ('' leaves the field empty)
+#        SEND_READY — 'true' if Send code must be enabled, 'false' if it must stay disabled
+appId: ${APP_ID}
+---
+- tapOn:
+    id: ${output.ids.login.emailInput}
+    label: Focus the email field
+- eraseText: 60
+- runFlow:
+    when:
+      true: ${EMAIL.length > 0}
+    commands:
+      - inputText: ${EMAIL}
+- runFlow:
+    when:
+      true: ${SEND_READY == 'true'}
+    label: 'Expect: Send code enabled for "${EMAIL}"'
+    commands:
+      - assertVisible:
+          id: ${output.ids.login.sendCode}
+          enabled: true
+- runFlow:
+    when:
+      true: ${SEND_READY != 'true'}
+    label: 'Expect: Send code disabled for "${EMAIL}"'
+    commands:
+      - assertVisible:
+          id: ${output.ids.login.sendCode}
+          enabled: false

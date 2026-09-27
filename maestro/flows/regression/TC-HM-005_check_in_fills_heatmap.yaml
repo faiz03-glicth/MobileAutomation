@@ -1,0 +1,110 @@
+# A check-in actually shows up: Home's heatmap, stats and today line, the Heatmap's year total and today's
+# tile, and the day details, where a second check-in can be added for that day.
+appId: ${APP_ID}
+name: 'TC-HM-005 A check-in fills the heatmap everywhere'
+tags:
+  - regression
+  - heatmap
+  - TC-HM-005
+properties:
+  testCases: 'TC-HM-005'
+onFlowStart:
+  - runFlow: ../../components/common/bootstrap.yaml
+---
+- runFlow: ../../components/common/start_as_guest.yaml
+- assertVisible:
+    id: ${output.monthTarget(0)}
+    text: ${output.monthLabel(output.today, 0)}
+    label: 'Before: this month has 0 check-ins'
+
+# First check-in from the + button.
+- runFlow:
+    file: ../../screens/checkin/add_check_in.yaml
+    env:
+      ACTIVITY: ${output.inputs.checkIn.activity}
+- runFlow:
+    file: ../../components/common/evidence.yaml
+    env:
+      NAME: home-after-first-check-in
+- assertVisible:
+    id: ${output.monthTarget(0)}
+    text: ${output.monthLabel(output.today, 1)}
+    label: 'Home heatmap: this month now has 1 check-in'
+- assertVisible:
+    text: 'Today, 1 check-in'
+    label: 'Home: today line says 1 check-in'
+- assertVisible:
+    id: ${output.ids.home.thisWeek}
+    text: 'This week, 1'
+    label: 'Home: This week = 1'
+- assertVisible:
+    id: ${output.ids.home.streak}
+    text: 'Day streak, 1'
+    label: 'Home: Day streak = 1'
+- assertNotVisible:
+    text: ${output.labels.home.emptyHeatmap}
+    label: 'Home: the empty-heatmap message is gone'
+
+# The Heatmap agrees.
+- runFlow: ../../screens/home/open_heatmap.yaml
+- assertVisible:
+    id: ${output.ids.heatmap.yearTotal}
+    text: 'Check-ins, 1'
+    label: 'Heatmap (Year): 1 check-in this year'
+- tapOn:
+    id: ${output.ids.heatmap.viewMonth}
+    label: Switch to Month view
+- assertVisible:
+    id: ${output.fill(output.ids.heatmap.dayTile)}
+    text: ${output.todayTileLabel(1)}
+    label: 'Heatmap (Month): today''s tile has 1 check-in'
+
+# Add a second one from the day details.
+- tapOn:
+    id: ${output.fill(output.ids.heatmap.dayTile)}
+    label: Open today's details
+- extendedWaitUntil:
+    visible:
+      id: ${output.ids.sheets.day}
+    timeout: ${output.timeouts.sheet}
+- assertVisible:
+    id: ${output.ids.sheets.dayCount}
+    text: '1'
+    label: 'Day details: 1 check-in'
+- tapOn:
+    id: ${output.ids.sheets.dayAdd}
+    label: Add a check-in for this day
+- extendedWaitUntil:
+    visible:
+      id: ${output.ids.sheets.checkIn}
+    timeout: ${output.timeouts.sheet}
+    label: 'Expect: the check-in sheet for this day'
+- waitForAnimationToEnd:
+    timeout: ${output.timeouts.animation}
+- tapOn:
+    id: ${output.activityTile(output.inputs.checkIn.activity)}
+- tapOn:
+    id: ${output.ids.sheets.checkInSave}
+    label: Save the second check-in
+- extendedWaitUntil:
+    visible:
+      id: ${output.ids.sheets.dayCount}
+      text: '2'
+    timeout: ${output.timeouts.sheet}
+    label: 'Day details: now 2 check-ins'
+- runFlow:
+    file: ../../components/sheets/close_sheet.yaml
+    env:
+      SHEET: ${output.ids.sheets.day}
+- assertVisible:
+    id: ${output.fill(output.ids.heatmap.dayTile)}
+    text: ${output.todayTileLabel(2)}
+    label: 'Heatmap (Month): today''s tile has 2 check-ins'
+- runFlow:
+    file: ../../components/navigation/nav_back.yaml
+    env:
+      SCREEN: ${output.screens.heatmap}
+- extendedWaitUntil:
+    visible: 'Today, 2 check-ins'
+    timeout: ${output.timeouts.screen}
+    label: 'Home: today line says 2 check-ins'

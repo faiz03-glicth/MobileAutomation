@@ -1,0 +1,17 @@
+# One row of an interaction audit (output.el). Runs the checks as an optional subflow so a failure is
+# recorded (screenshot + name) instead of stopping the audit, then gets back to the audited screen.
+appId: ${APP_ID}
+---
+- evalScript: ${output.el.ok = false}
+- runFlow:
+    file: audit_tap.yaml
+    optional: true
+    label: '${output.el.name}: visible, enabled, one tap opens ${output.el.expect}'
+- runFlow:
+    when:
+      true: ${!output.el.ok}
+    label: '${output.el.name}: FAILED, recording and recovering'
+    commands:
+      - takeScreenshot: ${'audit-failed-' + output.audit.name + '-' + output.audit.index}
+      - evalScript: ${output.audit.failed.push(output.el.name + ' (expected ' + output.el.expect + ')')}
+      - runFlow: recover.yaml

@@ -1,0 +1,39 @@
+# Google sign-in with the Google test account. Interactive: the test starts sign-in and picks the account;
+# a person finishes whatever Google asks on the phone (never automated). Run it with `npm run test:google`.
+appId: ${APP_ID}
+name: 'TC-AUTH-001 Google sign-in (interactive)'
+tags:
+  - interactive
+  - google
+  - auth
+  - TC-AUTH-001
+properties:
+  testCases: 'TC-AUTH-001'
+onFlowStart:
+  - runFlow: ../../components/common/bootstrap.yaml
+---
+- runFlow: ../../components/common/launch_fresh.yaml
+- runFlow:
+    file: ../../screens/login/open_login.yaml
+    env:
+      INTENT: existing
+- runFlow:
+    file: ../../screens/login/login.assert.yaml
+    env:
+      INTENT: existing
+- runFlow:
+    file: ../../screens/login/sign_in_with_google.yaml
+    env:
+      INTENT: existing
+- runFlow:
+    file: ../../components/common/wait_for_screen.yaml
+    env:
+      SCREEN: home
+- runFlow:
+    file: ../../components/navigation/go_to_tab.yaml
+    env:
+      TAB: profile
+- runFlow:
+    file: ../../screens/profile/profile.assert.yaml
+    env:
+      WHO: ${output.literal(output.env.googleAccount)}

@@ -1,0 +1,10 @@
+# Loads the test data and run settings into `output` (see maestro/config/). Every test flow runs this first
+# (onFlowStart), so selectors, timeouts and dates come from one place.
+appId: ${APP_ID}
+---
+- runScript:
+    file: ../../config/test-data.js
+    label: Load test data (test-data/*.json)
+- runScript:
+    file: ../../config/constants.js
+    label: Load run settings, timeouts and today's date

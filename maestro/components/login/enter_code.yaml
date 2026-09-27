@@ -1,0 +1,9 @@
+# Types into the 6-box code field (one hidden input behind the boxes; the sixth digit submits it).
+#   env: CODE — digits to type
+appId: ${APP_ID}
+---
+- tapOn:
+    id: ${output.ids.login.otpInput}
+    label: Focus the code field
+- eraseText: 10
+- inputText: ${CODE}

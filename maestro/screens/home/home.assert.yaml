@@ -1,0 +1,53 @@
+# Home: the heatmap card (current 3 months), the three stats, the trend card and the tab bar.
+#   env: EMPTY — 'true' for a new person with no check-ins (the heatmap's empty state must show)
+appId: ${APP_ID}
+---
+- assertVisible:
+    id: ${output.screens.home}
+    label: 'Home: screen shown'
+- assertVisible:
+    text: ${output.labels.home.title}
+    label: 'Home: title "Your activity"'
+- assertVisible:
+    text: ${output.labels.home.profileAvatar}
+    childOf:
+      id: ${output.screens.home}
+    enabled: true
+    label: 'Home: profile avatar button'
+- assertVisible:
+    text: ${output.homeHeader(0)}
+    label: 'Home: heatmap header covers the last 3 months, ending this month'
+- assertVisible:
+    id: ${output.fill(output.ids.home.month)}
+    enabled: true
+    label: 'Home: this month is rendered on the heatmap and can be opened'
+- assertVisible:
+    text: ${output.labels.home.nextMonths}
+    enabled: false
+    label: 'Home: "Next months" disabled (already showing the latest months)'
+- assertVisible:
+    id: ${output.ids.home.streak}
+    label: 'Home: Day streak stat'
+- assertVisible:
+    id: ${output.ids.home.activeDays}
+    label: 'Home: Active days stat'
+- assertVisible:
+    id: ${output.ids.home.thisWeek}
+    label: 'Home: This week stat'
+- runFlow:
+    when:
+      true: ${EMPTY == 'true'}
+    label: 'Home: empty heatmap invites the first check-in'
+    commands:
+      - assertVisible: ${output.labels.home.emptyHeatmap}
+      - assertVisible:
+          text: ${output.labels.home.firstCheckIn}
+          enabled: true
+- assertVisible:
+    id: ${output.ids.tabs.home}
+    selected: true
+    label: 'Tab bar: Home selected'
+- assertVisible:
+    id: ${output.ids.tabs.fab}
+    enabled: true
+    label: 'Tab bar: New check-in (+) button'

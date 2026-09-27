@@ -1,0 +1,119 @@
+# Setup: sensible defaults, at least one activity required, the reminder toggles, and the choice is carried
+# into the app.
+appId: ${APP_ID}
+name: 'TC-ONB-005 Setup - defaults, at least one activity, reminder toggle'
+tags:
+  - regression
+  - onboarding
+  - TC-ONB-005
+properties:
+  testCases: 'TC-ONB-005'
+onFlowStart:
+  - runFlow: ../../components/common/bootstrap.yaml
+---
+- runFlow: ../../components/common/launch_fresh.yaml
+- runFlow:
+    file: ../../screens/login/open_login.yaml
+    env:
+      INTENT: new
+- tapOn:
+    id: ${output.ids.login.skip}
+    label: Skip sign-in (continue as a guest)
+- runFlow:
+    file: ../../components/common/wait_for_screen.yaml
+    env:
+      SCREEN: intensity
+- tapOn:
+    id: ${output.ids.onboarding.primary}
+    label: Continue to Setup
+- runFlow:
+    file: ../../components/common/wait_for_screen.yaml
+    env:
+      SCREEN: setup
+
+# Defaults: Workout, Deep work and Reading picked; the others not; reminder on.
+- assertVisible:
+    id: ${output.activityTile('workout')}
+    checked: true
+    label: 'Default: Workout picked'
+- assertVisible:
+    id: ${output.activityTile('deep-work')}
+    checked: true
+    label: 'Default: Deep work picked'
+- assertVisible:
+    id: ${output.activityTile('reading')}
+    checked: true
+    label: 'Default: Reading picked'
+- assertVisible:
+    id: ${output.activityTile('walk')}
+    checked: false
+    label: 'Default: Walk not picked'
+- assertVisible:
+    id: ${output.ids.onboarding.reminderToggle}
+    checked: true
+    label: 'Default: daily reminder on'
+
+# Unpicking every activity disables Start tracking; picking one enables it again.
+- tapOn:
+    id: ${output.activityTile('workout')}
+- tapOn:
+    id: ${output.activityTile('deep-work')}
+- tapOn:
+    id: ${output.activityTile('reading')}
+- assertVisible:
+    id: ${output.activityTile('reading')}
+    checked: false
+    label: 'A second tap unpicks an activity'
+- assertVisible:
+    id: ${output.ids.onboarding.primary}
+    enabled: false
+    label: 'No activity picked: "Start tracking" disabled'
+- tapOn:
+    id: ${output.activityTile(output.inputs.onboarding.pick)}
+    label: 'Pick ${output.inputs.onboarding.pick}'
+- assertVisible:
+    id: ${output.activityTile(output.inputs.onboarding.pick)}
+    checked: true
+    label: 'The picked activity shows as picked'
+- assertVisible:
+    id: ${output.ids.onboarding.primary}
+    enabled: true
+    label: 'One activity picked: "Start tracking" enabled'
+
+# The reminder switch flips each tap.
+- tapOn:
+    id: ${output.ids.onboarding.reminderToggle}
+- assertVisible:
+    id: ${output.ids.onboarding.reminderToggle}
+    checked: false
+    label: 'Reminder switched off'
+- tapOn:
+    id: ${output.ids.onboarding.reminderToggle}
+- assertVisible:
+    id: ${output.ids.onboarding.reminderToggle}
+    checked: true
+    label: 'Reminder switched on again'
+
+# Finish, and the picked activity is offered first when checking in.
+- tapOn:
+    id: ${output.ids.onboarding.primary}
+    label: Start tracking
+- runFlow:
+    file: ../../components/common/wait_for_screen.yaml
+    env:
+      SCREEN: home
+- tapOn:
+    id: ${output.ids.tabs.fab}
+    label: Open a new check-in
+- extendedWaitUntil:
+    visible:
+      id: ${output.ids.sheets.checkIn}
+    timeout: ${output.timeouts.sheet}
+- assertVisible:
+    id: ${output.activityTile(output.inputs.onboarding.pick)}
+    selected: true
+    label: 'Check-in: the activity picked in Setup is preselected'
+- runFlow:
+    file: ../../components/sheets/close_sheet.yaml
+    env:
+      SHEET: ${output.ids.sheets.checkIn}

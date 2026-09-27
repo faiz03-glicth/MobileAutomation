@@ -1,0 +1,30 @@
+# New check-in from the tab bar's + button: pick an activity, check the preview, save.
+#   env: ACTIVITY — activity id (test-data/inputs.json onboarding.activities)
+appId: ${APP_ID}
+---
+- tapOn:
+    id: ${output.ids.tabs.fab}
+    retryTapIfNoChange: false
+    label: Tap + (New check-in)
+- extendedWaitUntil:
+    visible:
+      id: ${output.ids.sheets.checkIn}
+    timeout: ${output.timeouts.sheet}
+    label: 'Expect: the check-in sheet'
+- waitForAnimationToEnd:
+    timeout: ${output.timeouts.animation}
+- tapOn:
+    id: ${output.activityTile(ACTIVITY)}
+    label: 'Pick activity ${ACTIVITY}'
+- assertVisible:
+    id: ${output.ids.sheets.checkInPreview}
+    text: 'Today goes to \d+ check-ins?.*'
+    label: 'Check-in: preview says what today becomes'
+- tapOn:
+    id: ${output.ids.sheets.checkInSave}
+    label: Tap "Check in"
+- extendedWaitUntil:
+    notVisible:
+      id: ${output.ids.sheets.checkIn}
+    timeout: ${output.timeouts.sheet}
+    label: 'Expect: the sheet closes after saving'

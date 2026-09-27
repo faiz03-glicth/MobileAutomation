@@ -1,0 +1,8 @@
+# Maestro workspace. Only files under flows/ are tests; components/ and screens/ are subflows that tests
+# call with runFlow, so Maestro never runs them on their own. Suites are chosen by tag (see tools/run.mjs).
+flows:
+  - 'flows/**'
+
+executionOrder:
+  # One failing flow must not hide the results of the others.
+  continueOnFailure: true

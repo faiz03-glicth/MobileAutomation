@@ -1,0 +1,27 @@
+# Clickability / interaction audit of one screen, driven by a table in test-data/interaction-audit.json:
+#   Element → visible and enabled → responds to ONE tap → expected screen or sheet appears → return.
+# Every element is checked even when an earlier one fails (each runs as an optional subflow); the audit then
+# fails once, listing every element that didn't behave, with a screenshot of each failure.
+#   env: AUDIT — table name (home | profile | heatmap)
+appId: ${APP_ID}
+---
+- evalScript: ${output.audit = output.startAudit(AUDIT)}
+- assertVisible:
+    id: ${output.audit.screen}
+    label: 'Audit ${AUDIT}: starts on ${output.audit.screen}'
+- runFlow:
+    file: ../common/evidence.yaml
+    env:
+      NAME: ${'audit-' + AUDIT + '-start'}
+- repeat:
+    while:
+      true: ${output.audit.index < output.audit.elements.length}
+    commands:
+      - evalScript: ${output.el = output.audit.elements[output.audit.index]}
+      - runFlow:
+          file: audit_element.yaml
+          label: 'Audit ${AUDIT}: ${output.el.name}'
+      - evalScript: ${output.audit.index = output.audit.index + 1}
+- assertTrue:
+    condition: ${output.audit.failed.length == 0}
+    label: "Audit ${AUDIT}: every element works with one tap. Failed: ${output.audit.failed.join('; ') || 'none'}"

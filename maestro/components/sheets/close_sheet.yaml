@@ -1,0 +1,18 @@
+# Closes the open bottom sheet with its Close (X) button and checks it is really gone, so nothing invisible
+# is left over the screen underneath.
+#   env: SHEET — test ID of the sheet (e.g. check-in-sheet)
+appId: ${APP_ID}
+---
+- tapOn:
+    id: ${output.ids.sheets.close}
+    childOf:
+      id: ${SHEET}
+    retryTapIfNoChange: false
+    label: 'Close ${SHEET}'
+- extendedWaitUntil:
+    notVisible:
+      id: ${SHEET}
+    timeout: ${output.timeouts.sheet}
+    label: 'Expect: ${SHEET} is gone'
+- waitForAnimationToEnd:
+    timeout: ${output.timeouts.animation}

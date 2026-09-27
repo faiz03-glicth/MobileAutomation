@@ -1,0 +1,24 @@
+# From Intensity (page 2) with the default choices: Continue → Setup → Start tracking → Home.
+appId: ${APP_ID}
+---
+- runFlow: intensity.assert.yaml
+- tapOn:
+    id: ${output.ids.onboarding.primary}
+    label: Continue to Setup
+- runFlow:
+    file: ../../components/common/wait_for_screen.yaml
+    env:
+      SCREEN: setup
+- runFlow: setup.assert.yaml
+- tapOn:
+    id: ${output.ids.onboarding.primary}
+    label: Start tracking
+- runFlow:
+    file: ../../components/common/evidence.yaml
+    env:
+      NAME: onboarding-finished-toast
+- extendedWaitUntil:
+    visible:
+      id: ${output.screens.home}
+    timeout: ${output.timeouts.screen}
+    label: 'Expect: Home after "Start tracking"'

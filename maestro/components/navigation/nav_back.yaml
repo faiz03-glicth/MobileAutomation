@@ -1,0 +1,11 @@
+# Taps the app's own Back button (top-left chevron) on one screen. Scoped to that screen's container because
+# Android's navigation bar also has a "Back" button, and a stacked screen underneath may have one too.
+#   env: SCREEN — test ID of the screen whose Back to tap (e.g. calendar-screen)
+appId: ${APP_ID}
+---
+- tapOn:
+    text: ${output.labels.navBack}
+    childOf:
+      id: ${SCREEN}
+    retryTapIfNoChange: false
+    label: 'Tap the in-app Back button on ${SCREEN}'

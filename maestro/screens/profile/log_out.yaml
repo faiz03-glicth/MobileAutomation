@@ -1,0 +1,32 @@
+# Profile → Log out → the confirmation dialog. Cancel keeps you on Profile; Log out opens Login
+# (returning-person variant).
+#   env: CHOICE — confirm | cancel
+appId: ${APP_ID}
+---
+- scrollUntilVisible:
+    element:
+      id: ${output.ids.profile.logOut}
+    direction: DOWN
+    timeout: ${output.timeouts.scroll}
+- tapOn:
+    id: ${output.ids.profile.logOut}
+    retryTapIfNoChange: false
+    label: Tap "Log out"
+- runFlow:
+    file: ../../components/navigation/android_dialog.yaml
+    env:
+      TITLE: ${output.labels.dialogs.logOutTitle}
+      CHOICE: ${CHOICE}
+- runFlow:
+    when:
+      true: ${CHOICE == 'confirm'}
+    file: ../../components/common/wait_for_screen.yaml
+    env:
+      SCREEN: loginExisting
+- runFlow:
+    when:
+      true: ${CHOICE == 'cancel'}
+    commands:
+      - assertVisible:
+          id: ${output.screens.profile}
+          label: 'Expect: still on Profile after Cancel'

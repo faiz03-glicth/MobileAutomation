@@ -1,0 +1,18 @@
+# Interaction audit of Home (table: test-data/interaction-audit.json → home).
+appId: ${APP_ID}
+name: 'TC-NAV-002 Interaction audit - Home'
+tags:
+  - navigation
+  - regression
+  - interaction-audit
+  - TC-NAV-002
+properties:
+  testCases: 'TC-NAV-002'
+onFlowStart:
+  - runFlow: ../../components/common/bootstrap.yaml
+---
+- runFlow: ../../components/common/start_as_guest.yaml
+- runFlow:
+    file: ../../components/audit/audit_screen.yaml
+    env:
+      AUDIT: home

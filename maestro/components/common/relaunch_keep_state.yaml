@@ -1,0 +1,8 @@
+# Kills the app and opens it again WITHOUT clearing data: what a person sees when they come back later.
+appId: ${APP_ID}
+---
+- stopApp
+- launchApp:
+    clearState: false
+    stopApp: true
+    label: Relaunch Streak, keeping its data

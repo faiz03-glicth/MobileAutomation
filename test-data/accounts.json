@@ -1,0 +1,32 @@
+{
+  "_about": [
+    "Test accounts: who they are and where their secrets come from. This file is committed, so it never holds",
+    "passwords, one-time codes, API keys or real email addresses. Those live in the gitignored .env (local)",
+    "or CI secret variables."
+  ],
+  "google": {
+    "emailEnv": "GOOGLE_TEST_ACCOUNT",
+    "auth": "interactive",
+    "notes": [
+      "The account's address is private: set it in .env (GOOGLE_TEST_ACCOUNT), never in a committed file.",
+      "Automation never stores or types the Google password and never bypasses Google's checks.",
+      "Add the account to the test phone once (Settings > Accounts > Add account > Google).",
+      "The flow taps Google's account chooser entry for this address (GOOGLE_AUTO_PICK=true) and then waits",
+      "up to HUMAN_TIMEOUT_MS for a person to finish anything Google asks (consent, password, 2-step)."
+    ]
+  },
+  "emailOtp": {
+    "emailEnv": "TEST_USER_EMAIL",
+    "auth": "email one-time code (Streak has no passwords)",
+    "codeSource": "Supabase Auth admin API generate_link, called by the runner's local OTP broker",
+    "secretsEnv": ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"],
+    "notes": [
+      "Use a dedicated dummy address you control (e.g. streak.e2e+01@yourdomain.test that forwards to you).",
+      "The service_role key stays inside the runner process: Maestro only gets a one-run localhost URL."
+    ]
+  },
+  "guest": {
+    "auth": "none",
+    "notes": ["Skip on Welcome or on the Login screen; check-ins stay on the device."]
+  }
+}

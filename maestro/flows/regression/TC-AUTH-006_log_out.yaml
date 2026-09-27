@@ -1,0 +1,43 @@
+# Log out asks first: Cancel changes nothing; confirming opens Login for a returning person.
+appId: ${APP_ID}
+name: 'TC-AUTH-006 Log out - confirm dialog, cancel, confirm'
+tags:
+  - regression
+  - auth
+  - TC-AUTH-006
+properties:
+  testCases: 'TC-AUTH-006'
+onFlowStart:
+  - runFlow: ../../components/common/bootstrap.yaml
+---
+- runFlow: ../../components/common/start_as_guest.yaml
+- runFlow:
+    file: ../../components/navigation/go_to_tab.yaml
+    env:
+      TAB: profile
+- runFlow:
+    file: ../../screens/profile/log_out.yaml
+    env:
+      CHOICE: cancel
+- runFlow:
+    file: ../../screens/profile/log_out.yaml
+    env:
+      CHOICE: confirm
+- runFlow:
+    file: ../../screens/login/login.assert.yaml
+    env:
+      INTENT: existing
+
+# From here Back leads to Welcome, where "I already have an account" still works.
+- runFlow:
+    file: ../../components/navigation/nav_back.yaml
+    env:
+      SCREEN: ${output.screens.loginExisting}
+- runFlow:
+    file: ../../components/common/wait_for_screen.yaml
+    env:
+      SCREEN: welcome
+- runFlow:
+    file: ../../screens/login/open_login.yaml
+    env:
+      INTENT: existing

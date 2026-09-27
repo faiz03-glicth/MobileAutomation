@@ -1,0 +1,86 @@
+# Moving between onboarding pages: Continue, the on-screen Back, Android's Back and swiping all move exactly
+# one page; Skip on a middle page finishes onboarding.
+appId: ${APP_ID}
+name: 'TC-ONB-004 Onboarding pages - Continue, Back, Android Back, swipe, Skip'
+tags:
+  - regression
+  - onboarding
+  - navigation
+  - TC-ONB-004
+  - TC-ONB-007
+properties:
+  testCases: 'TC-ONB-004, TC-ONB-007'
+onFlowStart:
+  - runFlow: ../../components/common/bootstrap.yaml
+---
+- runFlow: ../../components/common/launch_fresh.yaml
+- runFlow:
+    file: ../../screens/login/open_login.yaml
+    env:
+      INTENT: new
+- tapOn:
+    id: ${output.ids.login.skip}
+    label: Skip sign-in (continue as a guest)
+- runFlow:
+    file: ../../components/common/wait_for_screen.yaml
+    env:
+      SCREEN: intensity
+
+# Continue → Setup, on-screen Back → Intensity
+- tapOn:
+    id: ${output.ids.onboarding.primary}
+    label: Continue
+- runFlow:
+    file: ../../components/common/wait_for_screen.yaml
+    env:
+      SCREEN: setup
+- runFlow:
+    file: ../../components/navigation/nav_back.yaml
+    env:
+      SCREEN: ${output.screens.setup}
+- runFlow:
+    file: ../../components/common/wait_for_screen.yaml
+    env:
+      SCREEN: intensity
+
+# Continue → Setup, Android Back → Intensity (one page, not out of onboarding)
+- tapOn:
+    id: ${output.ids.onboarding.primary}
+    label: Continue
+- runFlow:
+    file: ../../components/common/wait_for_screen.yaml
+    env:
+      SCREEN: setup
+- back
+- runFlow:
+    file: ../../components/common/wait_for_screen.yaml
+    env:
+      SCREEN: intensity
+
+# Swipe left → Setup, swipe right → Intensity
+- swipe:
+    direction: LEFT
+    label: Swipe to the next page
+- runFlow:
+    file: ../../components/common/wait_for_screen.yaml
+    env:
+      SCREEN: setup
+- assertNotVisible:
+    id: ${output.ids.onboarding.skip}
+    label: 'Setup: no Skip on the last page'
+- swipe:
+    direction: RIGHT
+    label: Swipe back to the previous page
+- runFlow:
+    file: ../../components/common/wait_for_screen.yaml
+    env:
+      SCREEN: intensity
+
+# Skip on a middle page finishes onboarding
+- tapOn:
+    id: ${output.ids.onboarding.skip}
+    label: Skip on Intensity
+- runFlow:
+    file: ../../components/common/wait_for_screen.yaml
+    env:
+      SCREEN: home

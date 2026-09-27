@@ -1,0 +1,78 @@
+# From the Heatmap into a day: a month opens the date wheel, which opens the day's details; a day tile opens
+# the day's details directly. Closing each sheet leaves the Heatmap fully usable (no leftover overlay).
+appId: ${APP_ID}
+name: 'TC-HM-003 Heatmap - month to date wheel to day, day tile to day'
+tags:
+  - regression
+  - heatmap
+  - TC-HM-003
+properties:
+  testCases: 'TC-HM-003'
+onFlowStart:
+  - runFlow: ../../components/common/bootstrap.yaml
+---
+- runFlow: ../../components/common/start_as_guest.yaml
+- runFlow: ../../screens/home/open_heatmap.yaml
+
+# Year view: this month → date wheel → Open → day details → Close.
+- tapOn:
+    id: ${output.monthTarget(0)}
+    retryTapIfNoChange: false
+    label: Tap this month on the year heatmap
+- extendedWaitUntil:
+    visible:
+      id: ${output.ids.sheets.dayPicker}
+    timeout: ${output.timeouts.sheet}
+    label: 'Expect: the date wheel sheet'
+- waitForAnimationToEnd:
+    timeout: ${output.timeouts.animation}
+- tapOn:
+    id: ${output.ids.sheets.dayPickerOpen}
+    retryTapIfNoChange: false
+    label: Open the chosen day
+- extendedWaitUntil:
+    visible:
+      id: ${output.ids.sheets.day}
+    timeout: ${output.timeouts.sheet}
+    label: 'Expect: the day details sheet'
+- assertVisible:
+    id: ${output.ids.sheets.dayCount}
+    label: 'Day details: shows the day''s check-in count'
+- runFlow:
+    file: ../../components/sheets/close_sheet.yaml
+    env:
+      SHEET: ${output.ids.sheets.day}
+- assertVisible:
+    id: ${output.screens.heatmap}
+    label: 'Back on the Heatmap'
+
+# The Heatmap still answers straight away: Month view, then today's tile → day details → Android Back.
+- tapOn:
+    id: ${output.ids.heatmap.viewMonth}
+    retryTapIfNoChange: false
+    label: Switch to Month view
+- tapOn:
+    id: ${output.fill(output.ids.heatmap.dayTile)}
+    retryTapIfNoChange: false
+    label: Tap today's tile
+- extendedWaitUntil:
+    visible:
+      id: ${output.ids.sheets.day}
+    timeout: ${output.timeouts.sheet}
+    label: 'Expect: today''s details'
+- waitForAnimationToEnd:
+    timeout: ${output.timeouts.animation}
+- back
+- extendedWaitUntil:
+    notVisible:
+      id: ${output.ids.sheets.day}
+    timeout: ${output.timeouts.sheet}
+    label: 'Expect: Android Back closes the sheet'
+- tapOn:
+    id: ${output.ids.heatmap.viewYear}
+    retryTapIfNoChange: false
+    label: Switch to Year view
+- assertVisible:
+    id: ${output.ids.heatmap.viewYear}
+    checked: true
+    label: 'The Heatmap responds after the sheet closed'

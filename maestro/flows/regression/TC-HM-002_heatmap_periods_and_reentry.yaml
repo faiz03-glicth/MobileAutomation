@@ -1,0 +1,108 @@
+# The Heatmap screen: stepping through years and months (never past today), switching views, leaving and
+# coming back to it several times with the same result.
+appId: ${APP_ID}
+name: 'TC-HM-002 Heatmap - years, months, views, back and re-entry'
+tags:
+  - regression
+  - heatmap
+  - navigation
+  - TC-HM-001
+  - TC-HM-002
+  - TC-HM-004
+properties:
+  testCases: 'TC-HM-001, TC-HM-002, TC-HM-004'
+onFlowStart:
+  - runFlow: ../../components/common/bootstrap.yaml
+---
+- runFlow: ../../components/common/start_as_guest.yaml
+- runFlow: ../../screens/home/open_heatmap.yaml
+- runFlow:
+    file: ../../screens/heatmap/heatmap.assert.yaml
+    env:
+      VIEW: year
+
+# Year view: back one year and forward again; never past this year.
+- tapOn:
+    text: ${output.labels.heatmap.previousYear}
+    retryTapIfNoChange: false
+    label: Previous year
+- assertVisible:
+    id: ${output.ids.heatmap.title}
+    text: ${String(Number(output.today.year) - 1)}
+    label: 'Expect: last year is shown'
+- assertVisible:
+    text: ${output.labels.heatmap.nextYear}
+    enabled: true
+    label: 'Next year is enabled again'
+- tapOn:
+    text: ${output.labels.heatmap.nextYear}
+    retryTapIfNoChange: false
+    label: Next year
+- assertVisible:
+    id: ${output.ids.heatmap.title}
+    text: ${output.today.year}
+    label: 'Expect: this year again'
+- assertVisible:
+    text: ${output.labels.heatmap.nextYear}
+    enabled: false
+    label: 'Next year disabled at this year'
+
+# Month view: this month, back one month and forward again.
+- tapOn:
+    id: ${output.ids.heatmap.viewMonth}
+    retryTapIfNoChange: false
+    label: Switch to Month view
+- runFlow:
+    file: ../../screens/heatmap/heatmap.assert.yaml
+    env:
+      VIEW: month
+- tapOn:
+    text: ${output.labels.heatmap.previousMonth}
+    retryTapIfNoChange: false
+    label: Previous month
+- assertVisible:
+    id: ${output.ids.heatmap.title}
+    text: ${output.monthsAgo(1).monthLong + ' ' + output.monthsAgo(1).year}
+    label: 'Expect: last month is shown'
+- tapOn:
+    text: ${output.labels.heatmap.nextMonth}
+    retryTapIfNoChange: false
+    label: Next month
+- assertVisible:
+    id: ${output.ids.heatmap.title}
+    text: ${output.today.monthLong + ' ' + output.today.year}
+    label: 'Expect: this month again'
+- assertVisible:
+    text: ${output.labels.heatmap.nextMonth}
+    enabled: false
+    label: 'Next month disabled at this month'
+
+# Back to Home, then in and out three more times: it always opens the same way (Year view, this year).
+- runFlow:
+    file: ../../components/navigation/nav_back.yaml
+    env:
+      SCREEN: ${output.screens.heatmap}
+- runFlow:
+    file: ../../components/common/wait_for_screen.yaml
+    env:
+      SCREEN: home
+- repeat:
+    times: 3
+    commands:
+      - runFlow: ../../screens/home/open_heatmap.yaml
+      - assertVisible:
+          id: ${output.ids.heatmap.viewYear}
+          checked: true
+          label: 'Re-entry: opens in Year view'
+      - assertVisible:
+          id: ${output.ids.heatmap.title}
+          text: ${output.today.year}
+          label: 'Re-entry: opens on this year'
+      - runFlow:
+          file: ../../components/navigation/nav_back.yaml
+          env:
+            SCREEN: ${output.screens.heatmap}
+      - runFlow:
+          file: ../../components/common/wait_for_screen.yaml
+          env:
+            SCREEN: home

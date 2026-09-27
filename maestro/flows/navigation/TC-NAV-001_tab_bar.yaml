@@ -1,0 +1,82 @@
+# The tab bar: every tab opens its own screen with one tap, in any order, and shows as selected; the +
+# button in the middle opens a check-in from any tab and closes back to the same tab.
+appId: ${APP_ID}
+name: 'TC-NAV-001 Tab bar - every tab, any order, one tap'
+tags:
+  - navigation
+  - regression
+  - TC-NAV-001
+properties:
+  testCases: 'TC-NAV-001'
+onFlowStart:
+  - runFlow: ../../components/common/bootstrap.yaml
+---
+- runFlow: ../../components/common/start_as_guest.yaml
+- assertVisible:
+    id: ${output.ids.tabs.indicator}
+    label: 'Tab bar: selection indicator drawn'
+
+# Out of order on purpose: neighbours, far jumps, and back again.
+- evalScript: ${output.tabOrder = ['profile', 'insights', 'history', 'home', 'history', 'profile', 'insights', 'home']}
+- evalScript: ${output.tabIndex = 0}
+- repeat:
+    times: ${output.tabOrder.length}
+    commands:
+      - runFlow:
+          file: ../../components/navigation/go_to_tab.yaml
+          env:
+            TAB: ${output.tabOrder[output.tabIndex]}
+      - evalScript: ${output.tabIndex = output.tabIndex + 1}
+
+# Tapping the tab you are on keeps you there.
+- tapOn:
+    id: ${output.ids.tabs.home}
+    label: Tap Home while on Home
+- assertVisible:
+    id: ${output.ids.tabs.home}
+    selected: true
+    label: 'Still on Home'
+
+# + opens a check-in and closing it returns to the same tab, from Home and from Profile.
+- tapOn:
+    id: ${output.ids.tabs.fab}
+    retryTapIfNoChange: false
+    label: Tap + on Home
+- extendedWaitUntil:
+    visible:
+      id: ${output.ids.sheets.checkIn}
+    timeout: ${output.timeouts.sheet}
+    label: 'Expect: the check-in sheet'
+- runFlow:
+    file: ../../components/sheets/close_sheet.yaml
+    env:
+      SHEET: ${output.ids.sheets.checkIn}
+- assertVisible:
+    id: ${output.ids.tabs.home}
+    selected: true
+    label: 'Back on Home after closing'
+- runFlow:
+    file: ../../components/navigation/go_to_tab.yaml
+    env:
+      TAB: profile
+- tapOn:
+    id: ${output.ids.tabs.fab}
+    retryTapIfNoChange: false
+    label: Tap + on Profile
+- extendedWaitUntil:
+    visible:
+      id: ${output.ids.sheets.checkIn}
+    timeout: ${output.timeouts.sheet}
+    label: 'Expect: the check-in sheet'
+- waitForAnimationToEnd:
+    timeout: ${output.timeouts.animation}
+- back
+- extendedWaitUntil:
+    notVisible:
+      id: ${output.ids.sheets.checkIn}
+    timeout: ${output.timeouts.sheet}
+    label: 'Expect: Android Back closes the sheet'
+- assertVisible:
+    id: ${output.ids.tabs.profile}
+    selected: true
+    label: 'Back on Profile after closing'

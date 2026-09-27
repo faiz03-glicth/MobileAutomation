@@ -1,0 +1,17 @@
+# A native Android confirmation dialog (React Native Alert). Its buttons are upper-cased by the platform
+# ("LOG OUT"), so they are tapped by their stable Android IDs rather than their text.
+#   env: TITLE  — regex of the dialog title (e.g. 'Log out\?')
+#        CHOICE — confirm | cancel
+appId: ${APP_ID}
+---
+- extendedWaitUntil:
+    visible: ${TITLE}
+    timeout: ${output.timeouts.sheet}
+    label: 'Expect: dialog "${TITLE}"'
+- tapOn:
+    id: ${output.dialogButton(CHOICE)}
+    label: 'Choose ${CHOICE} in the dialog'
+- extendedWaitUntil:
+    notVisible: ${TITLE}
+    timeout: ${output.timeouts.sheet}
+    label: 'Expect: the dialog closes'

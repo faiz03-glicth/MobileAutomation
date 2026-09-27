@@ -1,0 +1,55 @@
+# Login → "Continue with email" → type the address → "Send code" → the code step. Sends a real email through
+# Supabase (mind its email rate limit, see docs/test-accounts.md).
+#   env: INTENT — new | existing
+#        EMAIL  — address to sign in with
+appId: ${APP_ID}
+---
+- assertTrue:
+    condition: ${EMAIL.length > 0}
+    label: 'TEST_USER_EMAIL is set (see docs/test-accounts.md)'
+- tapOn:
+    id: ${output.ids.login.continueEmail}
+    label: Tap "Continue with email"
+- extendedWaitUntil:
+    visible: ${output.labels.login.emailTitle}
+    timeout: ${output.timeouts.screen}
+    label: 'Expect: the email step'
+- runFlow:
+    file: ../../components/login/email_field.yaml
+    env:
+      EMAIL: ${EMAIL}
+      SEND_READY: 'true'
+- tapOn:
+    id: ${output.ids.login.sendCode}
+    label: Tap "Send code"
+# Loading state: usually under a second, so it is recorded as evidence rather than required.
+- runFlow:
+    file: ../../components/common/evidence.yaml
+    env:
+      NAME: login-sending-code
+- extendedWaitUntil:
+    visible:
+      id: ${output.ids.login.otpInput}
+    timeout: ${output.timeouts.network}
+    optional: true
+    label: 'Expect: the code step'
+# If the app showed an error banner instead (offline, email rate limit, Supabase down), fail with its text.
+- runFlow:
+    when:
+      visible:
+        id: ${output.ids.login.banner}
+    commands:
+      - copyTextFrom:
+          id: ${output.ids.login.banner}
+      - assertTrue:
+          condition: ${false}
+          label: '${"Sending the code failed, the app says: " + maestro.copiedText}'
+- assertVisible:
+    id: ${output.ids.login.otpInput}
+    label: 'Expect: the code step (6-digit code field)'
+- assertVisible:
+    text: ${output.labels.login.codeTitle}
+    label: 'Code step: title "Check your inbox"'
+- assertVisible:
+    text: ${output.codeSubtitle(EMAIL)}
+    label: 'Code step: names the address the code went to'

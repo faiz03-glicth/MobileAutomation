@@ -1,0 +1,45 @@
+{
+  "_about": [
+    "Clickability / interaction audit tables: Element -> expected visibility -> expected interaction -> expected result.",
+    "Each element must be visible and enabled, respond to ONE tap (no retry), and show `expect` (a test ID).",
+    "`id` or `text` selects the element (`text` is a regex matched inside the audited screen only).",
+    "`back` returns to the audited screen: nav (in-app Back), system (Android Back), sheet (sheet Close),",
+    "tab:<home|insights|history|profile>, or none (the element doesn't leave the screen).",
+    "Placeholders: {year}, {month0}, {iso} (today on the test device). Start state: a fresh guest on Home.",
+    "Deliberately left out: Help & feedback and the legal links (they open the web browser, outside the app)."
+  ],
+  "home": {
+    "screen": "home-screen",
+    "elements": [
+      { "name": "Profile avatar", "text": "Profile", "expect": "profile-screen", "back": "tab:home" },
+      { "name": "Heatmap year title", "text": "\\d{4}, .+ check-ins?", "expect": "calendar-screen", "back": "nav" },
+      { "name": "Current month on the heatmap", "id": "month-{year}-{month0}", "expect": "day-picker", "back": "sheet" },
+      { "name": "Log your first check-in", "text": "Log your first check-in", "expect": "check-in-sheet", "back": "sheet" },
+      { "name": "See all", "text": "See all", "expect": "history-screen", "back": "tab:home" },
+      { "name": "New check-in (+)", "id": "fab-check-in", "expect": "check-in-sheet", "back": "system" }
+    ]
+  },
+  "profile": {
+    "screen": "profile-screen",
+    "elements": [
+      { "name": "Edit profile (pencil)", "text": "Edit profile", "expect": "settings-account", "back": "nav" },
+      { "name": "Account settings", "id": "profile-account", "expect": "settings-account", "back": "system" },
+      { "name": "Appearance", "id": "profile-appearance", "expect": "settings-appearance", "back": "nav" },
+      { "name": "Notifications", "id": "profile-notifications", "expect": "settings-notifications", "back": "system" },
+      { "name": "Activity preferences", "id": "profile-activities", "expect": "settings-activities", "back": "nav" },
+      { "name": "Data & privacy", "id": "profile-privacy", "expect": "settings-privacy", "back": "system" },
+      { "name": "Export data", "text": "Export data.*", "expect": "settings-privacy", "back": "nav" },
+      { "name": "About Streak", "text": "About Streak", "expect": "settings-about", "back": "nav" }
+    ]
+  },
+  "heatmap": {
+    "screen": "calendar-screen",
+    "elements": [
+      { "name": "Month view segment", "id": "calendar-view-month", "expect": "tile-{iso}", "back": "none" },
+      { "name": "Today's day tile", "id": "tile-{iso}", "expect": "day-sheet", "back": "sheet" },
+      { "name": "Year view segment", "id": "calendar-view-year", "expect": "month-{year}-{month0}", "back": "none" },
+      { "name": "Current month in the year", "id": "month-{year}-{month0}", "expect": "day-picker", "back": "system" },
+      { "name": "Back to Home", "text": "Back", "expect": "home-screen", "back": "none" }
+    ]
+  }
+}

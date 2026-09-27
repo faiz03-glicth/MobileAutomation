@@ -1,0 +1,20 @@
+# Interaction audit of the Heatmap screen (table: test-data/interaction-audit.json → heatmap).
+appId: ${APP_ID}
+name: 'TC-NAV-004 Interaction audit - Heatmap'
+tags:
+  - navigation
+  - regression
+  - interaction-audit
+  - heatmap
+  - TC-NAV-004
+properties:
+  testCases: 'TC-NAV-004'
+onFlowStart:
+  - runFlow: ../../components/common/bootstrap.yaml
+---
+- runFlow: ../../components/common/start_as_guest.yaml
+- runFlow: ../../screens/home/open_heatmap.yaml
+- runFlow:
+    file: ../../components/audit/audit_screen.yaml
+    env:
+      AUDIT: heatmap

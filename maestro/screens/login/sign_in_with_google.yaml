@@ -1,0 +1,37 @@
+# Google sign-in, from the Login options step. The test starts it and picks the test account in Google's
+# account chooser; anything Google asks after that (consent, password, 2-step) is for a person to finish on
+# the phone. The password is never stored or typed by automation.
+#   env: INTENT — new | existing
+appId: ${APP_ID}
+---
+- assertTrue:
+    condition: ${output.env.googleAccount.length > 0}
+    label: 'GOOGLE_TEST_ACCOUNT is set in .env (the address is private, see docs/test-accounts.md)'
+- evalScript: ${console.log('Google sign-in started. Pick ' + output.env.googleAccount + ' and finish any Google prompt on the phone')}
+- tapOn:
+    text: ${output.labels.login.google}
+    childOf:
+      id: ${output.loginScreen(INTENT)}
+    retryTapIfNoChange: false
+    label: Tap "Continue with Google"
+- runFlow:
+    file: ../../components/common/evidence.yaml
+    env:
+      NAME: google-chooser
+- runFlow:
+    when:
+      true: ${output.env.googleAutoPick}
+    label: 'Pick ${output.env.googleAccount} in Google''s account chooser (if it is on the phone)'
+    commands:
+      - extendedWaitUntil:
+          visible: ${output.literal(output.env.googleAccount)}
+          timeout: ${output.timeouts.network}
+          optional: true
+      - tapOn:
+          text: ${output.literal(output.env.googleAccount)}
+          optional: true
+- extendedWaitUntil:
+    visible:
+      id: ${output.screens.home}
+    timeout: ${output.timeouts.human}
+    label: 'Expect: Home once Google sign-in finishes (waits for a person up to HUMAN_TIMEOUT_MS)'

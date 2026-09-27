@@ -1,0 +1,36 @@
+# Setup (onboarding page 3 of 3): pick activities and the daily reminder. No Skip on the last page.
+appId: ${APP_ID}
+---
+- assertVisible:
+    id: ${output.screens.setup}
+    label: 'Setup: screen shown'
+- assertVisible:
+    text: ${output.labels.onboarding.setupTitle}
+    label: 'Setup: title'
+- evalScript: ${output.setupIndex = 0}
+- repeat:
+    times: ${output.inputs.onboarding.activities.length}
+    commands:
+      - evalScript: ${output.setupTile = output.activityTile(output.inputs.onboarding.activities[output.setupIndex])}
+      - assertVisible:
+          id: ${output.setupTile}
+          enabled: true
+          label: 'Setup: activity tile ${output.setupTile} shown and enabled'
+      - evalScript: ${output.setupIndex = output.setupIndex + 1}
+- assertVisible:
+    id: ${output.ids.onboarding.reminderToggle}
+    enabled: true
+    label: 'Setup: daily reminder toggle'
+- assertVisible:
+    text: ${output.labels.onboarding.reminder}
+    label: 'Setup: reminder text'
+- assertVisible:
+    text: ${output.step(3)}
+    label: 'Setup: page indicator says step 3 of 3'
+- assertVisible:
+    id: ${output.ids.onboarding.primary}
+    text: ${output.labels.onboarding.startTracking}
+    label: 'Setup: "Start tracking" shown'
+- assertNotVisible:
+    id: ${output.ids.onboarding.skip}
+    label: 'Setup: no Skip on the last page'

@@ -1,0 +1,55 @@
+# Login, sign-in options step. New people see "Create your Streak account" and can Skip (guest);
+# returning people see "Welcome back" and no Skip.
+#   env: INTENT — new | existing
+appId: ${APP_ID}
+---
+- assertVisible:
+    id: ${output.loginScreen(INTENT)}
+    label: 'Login (${INTENT}): screen shown'
+- assertVisible:
+    text: ${output.loginTitle(INTENT)}
+    label: 'Login (${INTENT}): title "${output.loginTitle(INTENT)}"'
+- assertVisible:
+    id: ${output.ids.login.logo}
+    label: 'Login (${INTENT}): logo mark rendered'
+- assertVisible:
+    text: ${output.labels.login.google}
+    childOf:
+      id: ${output.loginScreen(INTENT)}
+    enabled: true
+    label: 'Login (${INTENT}): "Continue with Google" enabled'
+- assertVisible:
+    id: ${output.ids.login.continueEmail}
+    enabled: true
+    label: 'Login (${INTENT}): "Continue with email" enabled'
+- assertVisible:
+    text: ${output.labels.login.terms}
+    childOf:
+      id: ${output.loginScreen(INTENT)}
+    label: 'Login (${INTENT}): Terms link shown'
+- assertVisible:
+    text: ${output.labels.login.privacy}
+    childOf:
+      id: ${output.loginScreen(INTENT)}
+    label: 'Login (${INTENT}): Privacy Policy link shown'
+- assertVisible:
+    text: ${output.labels.navBack}
+    childOf:
+      id: ${output.loginScreen(INTENT)}
+    enabled: true
+    label: 'Login (${INTENT}): Back available'
+- runFlow:
+    when:
+      true: ${INTENT == 'new'}
+    label: 'Login (new): Skip offered (continue as a guest)'
+    commands:
+      - assertVisible:
+          id: ${output.ids.login.skip}
+          enabled: true
+- runFlow:
+    when:
+      true: ${INTENT == 'existing'}
+    label: 'Login (existing): no Skip'
+    commands:
+      - assertNotVisible:
+          id: ${output.ids.login.skip}

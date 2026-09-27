@@ -1,0 +1,12 @@
+# First-launch state: clears the app's data (check-ins, session, settings), so the app opens on Welcome.
+# Destructive on purpose; see docs/device-setup.md before pointing the suite at a phone with real data.
+appId: ${APP_ID}
+---
+- launchApp:
+    clearState: true
+    label: Launch Streak with its data cleared (first launch)
+- extendedWaitUntil:
+    visible:
+      id: ${output.screens.welcome}
+    timeout: ${output.timeouts.launch}
+    label: 'Expect: first launch opens Welcome (a config error screen or crash would stop here)'

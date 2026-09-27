@@ -1,0 +1,31 @@
+# Profile: who is signed in, the totals, and every settings row down to Log out.
+#   env: WHO — the name/email regex expected on the identity card ('Guest' for a guest)
+appId: ${APP_ID}
+---
+- assertVisible:
+    id: ${output.screens.profile}
+    label: 'Profile: screen shown'
+- assertVisible:
+    text: ${WHO}
+    childOf:
+      id: ${output.screens.profile}
+    label: 'Profile: identity shows "${WHO}"'
+- assertVisible:
+    id: ${output.ids.profile.checkIns}
+    label: 'Profile: check-in total'
+- scrollUntilVisible:
+    element:
+      id: ${output.ids.profile.logOut}
+    direction: DOWN
+    timeout: ${output.timeouts.scroll}
+    label: 'Profile: scrolls down to Log out'
+- assertVisible:
+    id: ${output.ids.profile.logOut}
+    enabled: true
+    label: 'Profile: Log out enabled'
+- scrollUntilVisible:
+    element:
+      id: ${output.ids.profile.checkIns}
+    direction: UP
+    timeout: ${output.timeouts.scroll}
+    label: 'Profile: scrolls back to the top'

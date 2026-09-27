@@ -1,0 +1,54 @@
+# Welcome shows everything a first-time visitor needs, and both ways into Login work and come back.
+appId: ${APP_ID}
+name: 'TC-ONB-001 Welcome and the two ways into Login'
+tags:
+  - regression
+  - onboarding
+  - auth
+  - TC-ONB-001
+  - TC-ONB-002
+  - TC-AUTH-005
+properties:
+  testCases: 'TC-ONB-001, TC-ONB-002, TC-AUTH-005'
+onFlowStart:
+  - runFlow: ../../components/common/bootstrap.yaml
+---
+- runFlow: ../../components/common/launch_fresh.yaml
+- runFlow: ../../screens/onboarding/welcome.assert.yaml
+
+# Get started → Login (new) → Back → Welcome
+- runFlow:
+    file: ../../screens/login/open_login.yaml
+    env:
+      INTENT: new
+- runFlow:
+    file: ../../screens/login/login.assert.yaml
+    env:
+      INTENT: new
+- runFlow:
+    file: ../../components/navigation/nav_back.yaml
+    env:
+      SCREEN: ${output.screens.loginNew}
+- runFlow:
+    file: ../../components/common/wait_for_screen.yaml
+    env:
+      SCREEN: welcome
+- runFlow: ../../screens/onboarding/welcome.assert.yaml
+
+# I already have an account → Login (existing) → Back → Welcome
+- runFlow:
+    file: ../../screens/login/open_login.yaml
+    env:
+      INTENT: existing
+- runFlow:
+    file: ../../screens/login/login.assert.yaml
+    env:
+      INTENT: existing
+- runFlow:
+    file: ../../components/navigation/nav_back.yaml
+    env:
+      SCREEN: ${output.screens.loginExisting}
+- runFlow:
+    file: ../../components/common/wait_for_screen.yaml
+    env:
+      SCREEN: welcome
