@@ -11,33 +11,44 @@
 
 ## Publishing to GitLab and GitHub
 
-Create two empty repositories named `MobileAutomation` (no README or licence, so the first push is clean):
-GitLab (e.g. `gitlab.com/faiz03-glicth/MobileAutomation`) and GitHub (`github.com/faiz03-glicth/MobileAutomation`).
+The repository lives on both hosts and they are kept identical:
 
-**Option A: GitLab is the source of truth, GitHub mirrors it** (same model as the Streak app repo):
+- GitLab: https://gitlab.com/faiz03-glicth/MobileAutomation, **the source of truth** (merge requests, CI).
+- GitHub: https://github.com/faiz03-glicth/MobileAutomation, a mirror of GitLab.
 
-```bash
-git remote add origin git@gitlab.com:faiz03-glicth/MobileAutomation.git
-git remote add github https://github.com/faiz03-glicth/MobileAutomation.git
-git push -u origin main
-git push github main
-```
+Same model as the Streak app repo. Merge on GitLab only: merging on both creates diverging `main` branches.
 
-Merge requests and CI live on GitLab; push `main` (and tags) to `github` after merging, or let GitLab do it
-(Settings → Repository → Mirroring repositories → push mirror to GitHub with a GitHub token).
+### 1. Local pushes go to both
 
-**Option B: push every change to both** with two push URLs on one remote:
+`origin` fetches from GitLab and pushes to both, so every `git push` updates both hosts:
 
 ```bash
 git remote add origin git@gitlab.com:faiz03-glicth/MobileAutomation.git
 git remote set-url --add --push origin git@gitlab.com:faiz03-glicth/MobileAutomation.git
 git remote set-url --add --push origin https://github.com/faiz03-glicth/MobileAutomation.git
+git remote add github https://github.com/faiz03-glicth/MobileAutomation.git   # only to fetch/compare
 git push -u origin main
 ```
 
-Pick one host for reviews and merges; merging on both creates diverging `main` branches.
+`git remote -v` shows one fetch URL (GitLab) and two push URLs for `origin`. To check both hosts agree:
 
-Check with `git remote -v`.
+```bash
+git fetch origin && git fetch github && git rev-parse origin/main github/main
+```
+
+### 2. GitLab mirrors to GitHub (for merges made on gitlab.com)
+
+Merging a merge request on GitLab doesn't go through your laptop, so GitLab pushes to GitHub itself:
+
+1. GitHub → Settings → Developer settings → Fine-grained tokens → token for **only** the MobileAutomation
+   repository with **Contents: Read and write**.
+2. GitLab → the project → Settings → Repository → **Mirroring repositories**:
+   URL `https://github.com/faiz03-glicth/MobileAutomation.git`, direction **Push**, authentication
+   **Username and Password** (username `faiz03-glicth`, password = the token), and tick
+   **Mirror only protected branches** if you want only `main`.
+3. **Mirror repository**, then **Update now** to test. GitLab then updates GitHub after every push or merge.
+
+Never force-push on GitHub by hand: the mirror would overwrite it, and GitHub-only commits would be lost.
 
 ## What is and isn't committed
 
